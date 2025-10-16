@@ -106,6 +106,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
+definePageMeta({
+  layout: "login-layout",
+});
+
 // Reactive data
 const brandName = ref('')
 const loading = ref(false)

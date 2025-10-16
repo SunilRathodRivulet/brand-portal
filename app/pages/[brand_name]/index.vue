@@ -7,7 +7,8 @@
 <script setup>
 // Define page middleware to check authentication
 definePageMeta({
-  middleware: ['check-url', 'check-auth']
+  layout: "collage-layout",
+  middleware: ['check-url', 'check-auth-client']
 })
 </script>
 

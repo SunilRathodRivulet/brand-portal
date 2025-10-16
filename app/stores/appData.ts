@@ -54,23 +54,21 @@ export interface AppDataState {
 }
 
 export const useAppDataStore = defineStore('appData', () => {
-  const state = reactive<AppDataState>({
-    bannerData: [],
-    tileData: [],
-    dashboardData: null,
-    folders: [],
-    leftMenuOpen: false,
-    scrollTo: '',
-    scrollToRecent: false,
-    logo: '',
-    brand: null,
-    subscriptionFeatures: {}
-  })
+  // Individual refs for proper reactivity
+  const bannerData = ref<Banner[]>([])
+  const tileData = ref<Tile[]>([])
+  const dashboardData = ref<DashboardData | null>(null)
+  const folders = ref<any[]>([])
+  const leftMenuOpen = ref(false)
+  const scrollTo = ref('')
+  const scrollToRecent = ref(false)
+  const logo = ref('')
+  const brand = ref<any>(null)
+  const subscriptionFeatures = ref<any>({})
 
   // Actions
   const fetchBannerData = async () => {
-    // Mock data - replace with actual API call
-    state.bannerData = [
+    bannerData.value = [
       {
         id: 1,
         title: 'Welcome',
@@ -83,8 +81,7 @@ export const useAppDataStore = defineStore('appData', () => {
   }
 
   const fetchTileData = async () => {
-    // Mock data
-    state.tileData = [
+    tileData.value = [
       {
         id: 1,
         title: 'Images',
@@ -103,8 +100,7 @@ export const useAppDataStore = defineStore('appData', () => {
   }
 
   const fetchFolders = async () => {
-    // Mock folders
-    state.folders = []
+    folders.value = []
   }
 
   const fetchBrandDetails = async (brandName: string) => {
@@ -117,16 +113,14 @@ export const useAppDataStore = defineStore('appData', () => {
       method: 'POST',
       body: { url: brandName }
     })
-    console.log('fetchBrandDetails', response)
-
-    state.brand = response.data
-    state.logo = response.data.logo
+    
+    brand.value = response.data
+    logo.value = response.data?.logo || ''
     return response.data
   }
 
   const fetchDashboardData = async () => {
-    // Mock dashboard data
-    state.dashboardData = {
+    dashboardData.value = {
       trending_data: [],
       recent_uploads: {
         images: [],
@@ -142,7 +136,10 @@ export const useAppDataStore = defineStore('appData', () => {
   }
 
   const changeScrolling = (payload: { scrollingState: boolean; scrollTo: string }) => {
-    Object.assign(state, payload)
+    Object.assign({
+      scrollToRecent: payload.scrollingState,
+      scrollTo: payload.scrollTo
+    })
   }
 
   const fetchOrderAlertList = async () => {
@@ -150,30 +147,34 @@ export const useAppDataStore = defineStore('appData', () => {
   }
 
   // Actions for store operations (matching Vuex mutations)
-  const assignLogo = (logo: string) => {
-    state.logo = logo
+  const assignLogo = (newLogo: string) => {
+    logo.value = newLogo
   }
 
-  const brandDetails = (brand: any) => {
-    state.brand = brand
+  const brandDetails = (newBrand: any) => {
+    brand.value = newBrand
   }
 
-  const subscriptionFeatures = (features: any) => {
-    state.subscriptionFeatures = features
+  const setSubscriptionFeatures = (features: any) => {
+    subscriptionFeatures.value = features
+  }
+
+  const setLeftMenuState = (isOpen: boolean) => {
+    leftMenuOpen.value = isOpen
   }
 
   return {
     // State
-    bannerData: state.bannerData,
-    tileData: state.tileData,
-    dashboardData: state.dashboardData,
-    folders: state.folders,
-    leftMenuOpen: state.leftMenuOpen,
-    scrollTo: state.scrollTo,
-    scrollToRecent: state.scrollToRecent,
-    logo: state.logo,
-    brand: state.brand,
-    subscriptionFeatures: state.subscriptionFeatures,
+    bannerData,
+    tileData,
+    dashboardData,
+    folders,
+    leftMenuOpen,
+    scrollTo,
+    scrollToRecent,
+    logo,
+    brand,
+    subscriptionFeatures,
 
     // Actions
     fetchBannerData,
@@ -185,5 +186,7 @@ export const useAppDataStore = defineStore('appData', () => {
     assignLogo,
     brandDetails,
     fetchBrandDetails,
+    setSubscriptionFeatures,
+    setLeftMenuState,
   }
 })

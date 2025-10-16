@@ -116,11 +116,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import { useAppDataStore } from "~/stores";
+import { useAppDataStore } from "~/stores/appData";
 import { useRoute } from "vue-router";
+import { useHelpers } from "~/composables/core/common/useHelpers";
 
 definePageMeta({
-  middleware: ["redirect-if-logged-in", "check-url"],
+  layout: "login-layout",
+  middleware: ["check-url"],
 });
 
 // Reactive data
@@ -144,6 +146,8 @@ const brandName = computed(() => {
 const hasErrors = computed(() => {
   return emailErrors.value.length > 0 || passwordErrors.value.length > 0;
 });
+
+const { brandDetail } = useHelpers();
 
 // Methods
 const customStyles = () => {
@@ -206,10 +210,8 @@ const login = async () => {
     let workspace_id = appDataStore.brand?.workspace?.url_slug || null;
     if (!workspace_id) {
       const response = await appDataStore.fetchBrandDetails(brandName);
-      console.log("Fetched brand details for login:", response);
       workspace_id = response?.workspace?.url_slug || null;
     }
-    console.log("Logging in to workspace:", workspace_id, appDataStore.brand);
 
     const result = await authStore.login(
       form.value.email,
@@ -219,9 +221,10 @@ const login = async () => {
     console.log("Login result:", result);
 
     if (result.success) {
-      // fetch user details to ensure store is updated
+      // Fetch user details to ensure store is updated with complete user data
       await authStore.getUser();
 
+      // After successful login and user details fetch, redirect
       await navigateTo(`/${brandName}`);
     } else {
       // Show error for login failure
@@ -235,9 +238,14 @@ const login = async () => {
 };
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   // TODO: Load brand logo from appDataStore when implemented
-  logo.value = "/Collage-labinc-dark12c.svg"; // Default logo for now
+  if (!appDataStore.brand) {
+    await appDataStore.fetchBrandDetails(route.params.brand_name as string);
+    // Give time for store reactivity to propagate
+    await nextTick();
+  }
+  logo.value = appDataStore.logo || "/Collage-labinc-dark12c.svg";
 });
 
 // SEO

@@ -4,6 +4,7 @@ export interface User {
   id: number
   email: string
   name?: string
+  accessibleInstances?: any[]
   [key: string]: any
 }
 
@@ -14,33 +15,34 @@ interface AuthState {
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const state = reactive<AuthState>({
-    user: null,
-    accessToken: null,
-    loading: false
-  })
+  // Individual refs for proper reactivity
+  const user = ref<User | null>(null)
+  const accessToken = ref<string | null>(null)
+  const loading = ref(false)
 
   const config = useRuntimeConfig()
 
   // Getters
-  const isAuthenticated = computed(() => !!state.accessToken && !!state.user)
+  const isAuthenticated = computed(() => !!accessToken.value && !!user.value)
 
   // Actions
-  const setUser = (user: User) => {
-    state.user = user
+  const setUser = (newUser: User) => {
+    user.value = newUser
   }
 
   const setToken = (token: string) => {
-    state.accessToken = token
+    accessToken.value = token
   }
 
   const clearAuth = () => {
-    state.user = null
-    state.accessToken = null
+    user.value = null
+    accessToken.value = null
   }
 
   const login = async (email: string, password: string, workspaceUrlSlug?: string) => {
-    state.loading = true
+    clearAuth() // Clear any existing auth before new login attempt
+    loading.value = true
+
     try {
       const loginUrl = config.public.apiBaseUrl ? `${config.public.apiBaseUrl}login` : '/api/login'
 
@@ -55,38 +57,32 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'POST',
         body
       })
-
-      if (response?.data?.user) {
-        setUser(response.data.user)
-        if (process.client) {
+      
+      if (response?.data?.access_token) {
+        // Handle partial responses - if we have either user or token, proceed
+        if (response?.data?.user) {
+          setUser(response.data.user)
           localStorage.setItem('auth_user', JSON.stringify(response.data.user))
         }
-      }
-
-      if (response?.data?.access_token) {
-        setToken(response.data.access_token)
-
-        // Store in localStorage for persistence
-        if (process.client) {
+        if (response?.data?.access_token) {
+          setToken(response.data.access_token)
           localStorage.setItem('auth_token', response.data.access_token)
         }
-
-        if (response?.data?.instance?.url) await navigateTo(`/${response.data.instance.url}`)
-        else await navigateTo('/')
         return { success: true }
       } else {
-        throw new Error('Invalid response')
+        throw new Error('Login failed: Server returned invalid response')
       }
     } catch (error: any) {
       console.error('Login failed:', error)
+      clearAuth()
       return { success: false, error: error.message || 'Login failed' }
     } finally {
-      state.loading = false
+      loading.value = false
     }
   }
 
   const loginWithToken = async (token: string) => {
-    state.loading = true
+    loading.value = true
     try {
       const loginUrl = config.public.apiBaseUrl ? `${config.public.apiBaseUrl}login-with-id` : '/api/login-with-id'
 
@@ -124,7 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
       console.error('Token login failed:', error)
       return { success: false, error: error.message || 'Token login failed' }
     } finally {
-      state.loading = false
+      loading.value = false
     }
   }
 
@@ -135,7 +131,7 @@ export const useAuthStore = defineStore('auth', () => {
       await $fetch(logoutUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${state.accessToken}`
+          Authorization: `Bearer ${accessToken.value}`
         }
       })
     } catch (error) {
@@ -160,8 +156,8 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (storedUser && storedToken) {
       try {
-        state.user = JSON.parse(storedUser)
-        state.accessToken = storedToken
+        user.value = JSON.parse(storedUser)
+        accessToken.value = storedToken
       } catch (error) {
         console.error('Error parsing stored auth data:', error)
         clearAuth()
@@ -170,7 +166,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getUser = async () => {
-    if (!state.accessToken) return null
+    if (!accessToken.value) return null
 
     try {
       const userUrl = config.public.apiBaseUrl ? `${config.public.apiBaseUrl}user` : '/api/user'
@@ -178,9 +174,10 @@ export const useAuthStore = defineStore('auth', () => {
       const response: any = await $fetch(userUrl, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${state.accessToken}`
+          Authorization: `Bearer ${accessToken.value}`
         }
       })
+      console.log('getUser response:', response)
 
       if (response?.data?.user) {
         setUser(response.data.user)
@@ -205,9 +202,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     // State
-    user: state.user,
-    accessToken: state.accessToken,
-    loading: state.loading,
+    user,
+    accessToken,
+    loading,
 
     // Getters
     isAuthenticated,

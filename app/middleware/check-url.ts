@@ -5,7 +5,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   // Handle authenticated user checking different brand
   if (authStore.isAuthenticated) {
     const brandNameFromRoute = route.params?.brand_name as string
-    const brandNameFromUser = authStore.user?.accessibleInstances?.[0]?.workspace_id
+    const brandNameFromUser = authStore.user?.accessibleInstances?.[0]?.url
 
     if (brandNameFromUser && brandNameFromRoute && brandNameFromUser !== brandNameFromRoute) {
       // Logout from current session and try to access new brand
@@ -14,6 +14,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
       // Try to auto-login with public portal credentials
       try {
+        console.log('shouldnt be here')
         const config = useRuntimeConfig()
         const apiUrl = config.public.apiBaseUrl ?
           `${config.public.apiBaseUrl}check-public-portal` :

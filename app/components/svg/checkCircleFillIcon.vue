@@ -1,0 +1,18 @@
+<template>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 22C13.9778 22 15.9112 21.4135 17.5557 20.3147C19.2002 19.2159 20.4819 17.6541 21.2388 15.8268C21.9957 13.9996 22.1937 11.9889 21.8078 10.0491C21.422 8.10929 20.4696 6.32746 19.0711 4.92894C17.6725 3.53041 15.8907 2.578 13.9509 2.19215C12.0111 1.8063 10.0004 2.00433 8.17316 2.76121C6.3459 3.51809 4.78412 4.79981 3.6853 6.4443C2.58649 8.08879 2 10.0222 2 12C2 14.6522 3.05357 17.1957 4.92893 19.0711C5.85752 19.9997 6.95991 20.7362 8.17316 21.2388C9.38642 21.7413 10.6868 22 12 22Z" :fill="color" :stroke="color" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M16.5 8.90601L10.313 15.094L7.5 12.281" :fill="color"/>
+    <path d="M16.5 8.90601L10.313 15.094L7.5 12.281" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</template>
+
+<script setup>
+const props = defineProps({
+  color: {
+    type: String,
+    default: '#3D3D3D',
+  },
+})
+</script>
+
+<style scoped></style>
