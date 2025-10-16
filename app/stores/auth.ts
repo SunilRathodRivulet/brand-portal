@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { ref, computed, readonly } from 'vue'
 
 export interface User {
   id: number
@@ -8,215 +9,164 @@ export interface User {
   [key: string]: any
 }
 
-interface AuthState {
-  user: User | null
-  accessToken: string | null
-  loading: boolean
-}
-
 export const useAuthStore = defineStore('auth', () => {
-  // Individual refs for proper reactivity
+  /* ---------- State ---------- */
   const user = ref<User | null>(null)
-  const accessToken = ref<string | null>(null)
+  const token = ref<string | null>(null)
   const loading = ref(false)
+  const route = useRoute()
 
-  const config = useRuntimeConfig()
+  /* ---------- Computed ---------- */
+  const isAuthenticated = computed(() => !!token.value && !!user.value)
 
-  // Getters
-  const isAuthenticated = computed(() => !!accessToken.value && !!user.value)
-
-  // Actions
-  const setUser = (newUser: User) => {
-    user.value = newUser
+  /* ---------- Actions ---------- */
+  const setUser = (u: User | null) => {
+    user.value = u
   }
 
-  const setToken = (token: string) => {
-    accessToken.value = token
+  const setToken = (t: string | null) => {
+    token.value = t
   }
 
   const clearAuth = () => {
     user.value = null
-    accessToken.value = null
+    token.value = null
   }
 
   const login = async (email: string, password: string, workspaceUrlSlug?: string) => {
-    clearAuth() // Clear any existing auth before new login attempt
+    clearAuth()
     loading.value = true
-
     try {
-      const loginUrl = config.public.apiBaseUrl ? `${config.public.apiBaseUrl}login` : '/api/login'
-
+      const config = useRuntimeConfig()
       const body: any = { email, password }
+      if (workspaceUrlSlug) body.workspace_id = workspaceUrlSlug
 
-      // Add workspace_id if provided (for brand-specific login)
-      if (workspaceUrlSlug) {
-        body.workspace_id = workspaceUrlSlug
+      const response = await $fetch<any>(
+        `${config.public.apiBaseUrl || ''}login`,
+        { method: 'POST', body }
+      )
+
+      // Handle different possible response structures
+      let userData = null
+      let accessToken = null
+
+      if (response.data) {
+        if (response.data.user && response.data.access_token) {
+          userData = response.data.user
+          accessToken = response.data.access_token
+        }
+        else if (response.data.dealer_user_id && response.data.access_token) {
+          userData = {
+            id: response.data.dealer_user_id,
+            email: response.data.email || '',
+            name: response.data.name || '',
+            workspace_id: response.data.workspace_id,
+            ...response.data
+          }
+          accessToken = response.data.access_token
+        }
+      } else if (response.access_token) {
+        userData = {
+          id: response.dealer_user_id || response.user_id || 0,
+          email: response.email || '',
+          ...response
+        }
+        accessToken = response.access_token
       }
 
-      const response: any = await $fetch(loginUrl, {
-        method: 'POST',
-        body
-      })
-      
-      if (response?.data?.access_token) {
-        // Handle partial responses - if we have either user or token, proceed
-        if (response?.data?.user) {
-          setUser(response.data.user)
-          localStorage.setItem('auth_user', JSON.stringify(response.data.user))
-        }
-        if (response?.data?.access_token) {
-          setToken(response.data.access_token)
-          localStorage.setItem('auth_token', response.data.access_token)
-        }
-        return { success: true }
-      } else {
-        throw new Error('Login failed: Server returned invalid response')
-      }
-    } catch (error: any) {
-      console.error('Login failed:', error)
+      setUser(userData)
+      setToken(accessToken)
+
+      return { success: true }
+    } catch (e: any) {
+      console.error('[AuthStore] login - Error:', e)
       clearAuth()
-      return { success: false, error: error.message || 'Login failed' }
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const loginWithToken = async (token: string) => {
-    loading.value = true
-    try {
-      const loginUrl = config.public.apiBaseUrl ? `${config.public.apiBaseUrl}login-with-id` : '/api/login-with-id'
-
-      const response: any = await $fetch(loginUrl, {
-        method: 'POST',
-        body: { token }
-      })
-
-      if (response?.data?.user && response?.data?.access_token) {
-        setUser(response.data.user)
-        setToken(response.data.access_token)
-
-        if (process.client) {
-          localStorage.setItem('auth_user', JSON.stringify(response.data.user))
-          localStorage.setItem('auth_token', response.data.access_token)
-        }
-
-        await navigateTo('/')
-        return { success: true }
-      } else if (response?.user && response?.access_token) {
-        setUser(response.user)
-        setToken(response.access_token)
-
-        if (process.client) {
-          localStorage.setItem('auth_user', JSON.stringify(response.user))
-          localStorage.setItem('auth_token', response.access_token)
-        }
-
-        await navigateTo('/')
-        return { success: true }
-      } else {
-        throw new Error('Invalid response')
-      }
-    } catch (error: any) {
-      console.error('Token login failed:', error)
-      return { success: false, error: error.message || 'Token login failed' }
+      return { success: false, error: e.message || 'Login failed' }
     } finally {
       loading.value = false
     }
   }
 
   const logout = async () => {
+    const brandName =  route.params?.brand_name || user.value?.accessibleInstances?.[0]?.url || 'login'
     try {
-      const logoutUrl = config.public.apiBaseUrl ? `${config.public.apiBaseUrl}logout` : '/api/logout'
-
-      await $fetch(logoutUrl, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken.value}`
-        }
-      })
-    } catch (error) {
-      console.error('Logout API call failed:', error)
+      const config = useRuntimeConfig()
+      if (token.value) {
+        await $fetch(`${config.public.apiBaseUrl || ''}logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token.value}` }
+        })
+      }
+    } catch {
+      /* ignore */
     } finally {
       clearAuth()
-
-      if (process.client) {
-        localStorage.removeItem('auth_user')
-        localStorage.removeItem('auth_token')
-      }
-
-      navigateTo('/login')
-    }
-  }
-
-  const checkAuth = () => {
-    if (!process.client) return
-
-    const storedUser = localStorage.getItem('auth_user')
-    const storedToken = localStorage.getItem('auth_token')
-
-    if (storedUser && storedToken) {
-      try {
-        user.value = JSON.parse(storedUser)
-        accessToken.value = storedToken
-      } catch (error) {
-        console.error('Error parsing stored auth data:', error)
-        clearAuth()
-      }
+      await navigateTo(`/${brandName}/login`)
     }
   }
 
   const getUser = async () => {
-    if (!accessToken.value) return null
-
+    if (!token.value) return null
+    const brandName = route.params?.brand_name || user.value?.accessibleInstances?.[0]?.url || 'login'
     try {
-      const userUrl = config.public.apiBaseUrl ? `${config.public.apiBaseUrl}user` : '/api/user'
-
-      const response: any = await $fetch(userUrl, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${accessToken.value}`
-        }
-      })
-      console.log('getUser response:', response)
-
-      if (response?.data?.user) {
-        setUser(response.data.user)
-        return response.data.user
-      } else if (response?.user) {
-        setUser(response.user)
-        return response.user
-      }
-    } catch (error) {
-      console.error('Error fetching user:', error)
+      const config = useRuntimeConfig()
+      const { data } = await $fetch<{ data: { user: User } }>(
+        `${config.public.apiBaseUrl}user`,
+        { headers: { Authorization: `Bearer ${token.value}` } }
+      )
+      setUser(data.user)
+      return data.user
+    } catch (e) {
+      console.error('getUser failed', e)
       clearAuth()
-      navigateTo('/login')
+      await navigateTo(`/${brandName}/login`)
+      return null
     }
-
-    return null
   }
 
-  // Initialize auth on client side
-  if (process.client) {
-    checkAuth()
+  const loginWithToken = async (oneTimeToken: string) => {
+    loading.value = true
+    try {
+      const config = useRuntimeConfig()
+      const endpoint = `${config.public.apiBaseUrl || ''}login-with-id`
+
+      const { data } = await $fetch<{ data: { user: User, access_token: string } }>(
+        endpoint,
+        { method: 'POST', body: { token: oneTimeToken } }
+      )
+
+      setUser(data.user)
+      setToken(data.access_token)
+
+      await navigateTo('/')
+      return { success: true }
+    } catch (e: any) {
+      console.error('Token login failed', e)
+      return { success: false, error: e.message || 'Token login failed' }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const checkAuth = () => {
+    console.log('[AuthStore] checkAuth ── isAuthenticated:', isAuthenticated.value,
+      'hasUser:', !!user.value,
+      'hasToken:', !!token.value,
+      'tokenLength:', token.value?.length)
   }
 
   return {
-    // State
-    user,
-    accessToken,
-    loading,
-
-    // Getters
+    user: readonly(user),
+    accessToken: readonly(token),
+    loading: readonly(loading),
     isAuthenticated,
-
-    // Actions
     setUser,
     setToken,
     clearAuth,
     login,
-    loginWithToken,
     logout,
+    getUser,
     checkAuth,
-    getUser
+    loginWithToken
   }
 })

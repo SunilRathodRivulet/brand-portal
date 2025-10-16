@@ -33,14 +33,11 @@ interface Workspace {
 
 export default function useCollageSidebar() {
   const route = useRoute()
-  const router = useRouter()
-  const nuxtApp = useNuxtApp()
-  const runtimeConfig = useRuntimeConfig()
   const authStore = useAuthStore()
   const appStore = useAppDataStore()
   const { setCurrentWorkspace, _auth, getBrandName } = useHelpers()
 
-  // state - initialize consistently for SSR
+  // state - initialize consistently for SSR with hydration-safe values
   const drawer: Ref<boolean> = ref(true)
   const mini: Ref<boolean> = ref(false)
   const oldMini: Ref<boolean> = ref(false)
@@ -50,6 +47,9 @@ export default function useCollageSidebar() {
   const userLogo: Ref<string> = ref('')
   const authInstanceId = ref<number | null>(null)
 
+  // Hydration-safe state management
+  const isHydrated = ref(false)
+
   const menuRoutes: Ref<MenuRoute[]> = ref([
     { title: 'Dashboard', name: 'brand_name', icon: 'homeIcon' },
     { title: 'Collages', name: 'brand_name-collage', icon: 'gridIcon' },
@@ -58,11 +58,11 @@ export default function useCollageSidebar() {
   ])
 
   const targetRoutes: string[] = [
-    'brand_name-files-id',
+    'brand_name-files-id'
   ]
 
   // computed
-  const accessibleWorkspaces: ComputedRef<Workspace[]> = computed(() => authStore.user.accessibleInstances || [])
+  const accessibleWorkspaces: ComputedRef<readonly Workspace[]> = computed(() => authStore.user?.accessibleInstances || [])
 
 
   // workspaceId is now provided by useWorkspaceId composable
@@ -70,6 +70,10 @@ export default function useCollageSidebar() {
   // watchers
   watch(mini, (val: boolean) => {
     appStore.setLeftMenuState(val)
+    // Persist sidebar state to localStorage
+    if (process.client && isHydrated.value) {
+      localStorage.setItem('sidebar-mini-state', JSON.stringify(val))
+    }
   })
 
   watch(
@@ -88,15 +92,30 @@ export default function useCollageSidebar() {
 
   // lifecycle
   onMounted(async () => {
-    userBrandName.value = route.params.brand_name as string || ''
-    const userWpId = authStore.user?.workspace_id
-    console.log('User:', authStore.user)
-    const workspace = authStore.user.accessibleInstances.find(
-      ({ workspace_id }) =>
-        parseInt(workspace_id) === parseInt(userWpId)
-    )
-    authInstanceId.value = authStore.user?.instance_id || null
-    userLogo.value = workspace.logo
+    // Hydration-safe initialization
+    isHydrated.value = true
+
+    // Restore sidebar state from localStorage if available
+    if (process.client) {
+      const savedMiniState = localStorage.getItem('sidebar-mini-state')
+      if (savedMiniState !== null) {
+        mini.value = JSON.parse(savedMiniState)
+      }
+    }
+
+    try {
+      userBrandName.value = route.params.brand_name as string || ''
+      const userWpId = authStore.user?.workspace_id
+      console.log('User:', authStore.user)
+      const workspace = authStore.user?.accessibleInstances?.find(
+        ({ workspace_id }) =>
+          parseInt(workspace_id) === parseInt(userWpId)
+      )
+      authInstanceId.value = authStore.user?.instance_id || null
+      userLogo.value = workspace?.logo || ''
+    } catch (error) {
+      console.error('Error in onMounted of useCollageSidebar:', error);
+    }
     contentLoading.value = false
   })
 
@@ -117,7 +136,7 @@ export default function useCollageSidebar() {
   const changeWorkspace = async (wp: Workspace): Promise<void> => {
     try {
       const userWpId = authStore.user?.workspace_id
-      const workspace = authStore.user.accessibleInstances.find(
+      const workspace = authStore.user?.accessibleInstances?.find(
         ({ workspace_id }) =>
           parseInt(workspace_id) === parseInt(userWpId)
       )
@@ -191,7 +210,7 @@ export default function useCollageSidebar() {
 
         await authStore.getUser()
         setCurrentWorkspace(wp.workspace_id)
-        userLogo.value = workspace.logo
+        userLogo.value = workspace?.logo || ''
         userBrandName.value = getBrandName() ?? ''
         authInstanceId.value = authStore.user?.instance_id || null
         await callOnce(checkPublicPortal)
@@ -243,5 +262,6 @@ export default function useCollageSidebar() {
     userBrandName,
     userLogo,
     authInstanceId,
+    user: toRaw(authStore.user),
   }
 }

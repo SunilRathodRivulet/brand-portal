@@ -319,5 +319,6 @@ const {
   toggleDrawer,
   authInstanceId,
   userBrandName,
+  user,
 } = useCollageSidebar();
 </script>

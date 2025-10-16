@@ -2,6 +2,16 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   const authStore = useAuthStore()
   const route = to as any
 
+  if (process.server && !authStore.isAuthenticated) {
+    const hdr   = useRequestHeaders(['cookie'])['cookie'] || ''
+    const token = parseCookie(hdr, 'auth_token')
+    const user  = safeJsonParse(parseCookie(hdr, 'auth_user'))
+    if (token && user) {
+      authStore.setToken(token)   // updates ref, no document.cookie on server
+      authStore.setUser(user)
+    }
+  }
+
   // Handle authenticated user checking different brand
   if (authStore.isAuthenticated) {
     const brandNameFromRoute = route.params?.brand_name as string
@@ -36,13 +46,13 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         const loginResult = await authStore.login(email, password, workspace_id)
 
         if (loginResult.success) {
-          return navigateTo(route.fullPath)
+          return navigateTo(`/${brandNameFromRoute}`)
         } else {
           return navigateTo(`/${brandNameFromRoute}/login`)
         }
       } catch (error: any) {
         console.error('Error switching brands:', error?.message)
-        return navigateTo(route.fullPath)
+        return navigateTo(`/${brandNameFromRoute}/login`)
       }
     }
   }
@@ -169,4 +179,14 @@ function clearAuthCookies() {
       document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=Thu, 01 Jan 1970 00:00:00 GMT")
     })
   }
+}
+
+/* ------------- helpers (keep at bottom of file) --------------------- */
+function parseCookie(raw = '', name: string): string | null {
+  const m = raw.match(new RegExp('(?:^|;)\\s*' + name + '=([^;]*)'))
+  return m ? decodeURIComponent(m[1]) : null
+}
+function safeJsonParse(str: string | null): any {
+  if (!str) return null
+  try { return JSON.parse(str) } catch { return null }
 }

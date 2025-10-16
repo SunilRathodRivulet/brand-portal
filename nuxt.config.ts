@@ -26,7 +26,7 @@ export default defineNuxtConfig({
       'constants/**'
     ]
   },
-  $schema: undefined,  
+  $schema: undefined,
 
 
   components: [
@@ -38,6 +38,7 @@ export default defineNuxtConfig({
   plugins: [
     // '~/plugins/fetch.ts',
     '~/plugins/pinia.ts',
+    '~/plugins/auth-cookies.client.ts',
     '~/plugins/vuetify.ts',
   ],
   runtimeConfig: {
