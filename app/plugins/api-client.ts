@@ -52,7 +52,6 @@ export default defineNuxtPlugin((nuxtApp) => {
           // Remove leading slash from request if present to avoid double slashes
           const cleanRequestUrl = requestUrl.startsWith('/') ? requestUrl.slice(1) : requestUrl
           const finalUrl = `${apiBaseUrl}${cleanRequestUrl}`
-          console.log('🔗 API URL transformed:', requestUrl, '→', finalUrl)
 
           // ✅ FIXED: Properly update the request parameter
           // This is the correct way to modify the URL in $fetch
@@ -84,14 +83,6 @@ export default defineNuxtPlugin((nuxtApp) => {
       // Get auth token from multiple sources (only if auth is not skipped)
       const token = skipAuth ? null : getAuthToken()
 
-      // Debug current auth state
-      console.log('🔍 API Request Debug:', {
-        url: requestUrl,
-        hasToken: !!token,
-        tokenLength: token?.length || 0,
-        skipAuth: skipAuth
-      })
-
       if (token && !skipAuth) {
         // Initialize headers if not present
         if (!options.headers) {
@@ -108,8 +99,6 @@ export default defineNuxtPlugin((nuxtApp) => {
           // Handle plain object format
           (options.headers as Record<string, string>).Authorization = `Bearer ${token}`
         }
-
-        console.log('✅ Auth token added to request:', requestUrl)
       } else if (skipAuth) {
         console.log('🔓 Auth skipped for request:', requestUrl)
       } else {
@@ -139,7 +128,6 @@ export default defineNuxtPlugin((nuxtApp) => {
 
       // Handle 401 Unauthorized - token might be expired
       if (response.status === 401) {
-        console.warn('Unauthorized request - token may be expired')
         // Optionally trigger logout on client side
         if (process.client) {
           try {

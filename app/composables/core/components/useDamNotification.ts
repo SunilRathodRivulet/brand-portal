@@ -122,11 +122,11 @@ export function useDamNotification(props?: { navCollapsed?: boolean }) {
         lastPage_.value = 0
       }
 
-      const response = await notificationApi.getAnnouncements(page_.value)
-      console.log('Announcements response:', response)
-      lastPage_.value = response.last_page
-      announcements.value.push(...response.data)
-      unreadAnnouncements.value = response.total_unread_announcement
+      const { data } = await notificationApi.getAnnouncements(page_.value)
+      console.log('Announcements response:', data)
+      lastPage_.value = data.last_page
+      announcements.value.push(...data.data)
+      unreadAnnouncements.value = data.total_unread_announcement
       initialLoading_.value = false
       if (page_.value < lastPage_.value) {
         page_.value += 1
