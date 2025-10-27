@@ -19,12 +19,12 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
     if (brandNameFromUser && brandNameFromRoute && brandNameFromUser !== brandNameFromRoute) {
       // Logout from current session and try to access new brand
+      console.log(`Switching brands from ${brandNameFromUser} to ${brandNameFromRoute}`)
       await authStore.logout()
       clearAuthCookies()
 
       // Try to auto-login with public portal credentials
       try {
-        console.log('shouldnt be here')
         const config = useRuntimeConfig()
         const apiUrl = config.public.apiBaseUrl ?
           `${config.public.apiBaseUrl}check-public-portal` :

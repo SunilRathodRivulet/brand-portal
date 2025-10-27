@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
+import { useAuthApi } from '~/composables/api/useAuthApi'
 
 export interface User {
   id: number
@@ -15,6 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(null)
   const loading = ref(false)
   const route = useRoute()
+  const authApi = useAuthApi()
 
   /* ---------- Computed ---------- */
   const isAuthenticated = computed(() => !!token.value && !!user.value)
@@ -37,14 +39,8 @@ export const useAuthStore = defineStore('auth', () => {
     clearAuth()
     loading.value = true
     try {
-      const config = useRuntimeConfig()
-      const body: any = { email, password }
-      if (workspaceUrlSlug) body.workspace_id = workspaceUrlSlug
-
-      const response = await $fetch<any>(
-        `${config.public.apiBaseUrl || ''}login`,
-        { method: 'POST', body }
-      )
+      const response = await authApi.login(email, password, workspaceUrlSlug)
+      console.log('[AuthStore] login - Response:', response)
 
       // Handle different possible response structures
       let userData = null
@@ -90,12 +86,8 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = async () => {
     const brandName =  route.params?.brand_name || user.value?.accessibleInstances?.[0]?.url || 'login'
     try {
-      const config = useRuntimeConfig()
       if (token.value) {
-        await $fetch(`${config.public.apiBaseUrl || ''}logout`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token.value}` }
-        })
+        await authApi.logout(token.value)
       }
     } catch {
       /* ignore */
@@ -109,13 +101,9 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token.value) return null
     const brandName = route.params?.brand_name || user.value?.accessibleInstances?.[0]?.url || 'login'
     try {
-      const config = useRuntimeConfig()
-      const { data } = await $fetch<{ data: { user: User } }>(
-        `${config.public.apiBaseUrl}user`,
-        { headers: { Authorization: `Bearer ${token.value}` } }
-      )
-      setUser(data.user)
-      return data.user
+      const userData = await authApi.getUser(token.value)
+      setUser(userData)
+      return userData
     } catch (e) {
       console.error('getUser failed', e)
       clearAuth()
@@ -127,13 +115,7 @@ export const useAuthStore = defineStore('auth', () => {
   const loginWithToken = async (oneTimeToken: string) => {
     loading.value = true
     try {
-      const config = useRuntimeConfig()
-      const endpoint = `${config.public.apiBaseUrl || ''}login-with-id`
-
-      const { data } = await $fetch<{ data: { user: User, access_token: string } }>(
-        endpoint,
-        { method: 'POST', body: { token: oneTimeToken } }
-      )
+      const data = await authApi.loginWithToken(oneTimeToken)
 
       setUser(data.user)
       setToken(data.access_token)

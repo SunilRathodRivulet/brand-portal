@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, toRaw, type Ref, type ComputedRef } from 'vue'
 import { useRoute, useRouter, useRuntimeConfig } from '#imports'
 import { useNuxtApp } from '#app'
+import { useWorkspaceApi } from '~/composables/api/useWorkspaceApi'
 
 // Type definitions
 interface MenuRoute {
@@ -36,6 +37,7 @@ export default function useCollageSidebar() {
   const authStore = useAuthStore()
   const appStore = useAppDataStore()
   const { setCurrentWorkspace, _auth, getBrandName } = useHelpers()
+  const workspaceApi = useWorkspaceApi()
 
   // state - initialize consistently for SSR with hydration-safe values
   const drawer: Ref<boolean> = ref(true)
@@ -160,18 +162,10 @@ export default function useCollageSidebar() {
       }
 
       const checkPublicPortal = async () => {
-        const runtimeConfig = useRuntimeConfig()
-        const apiUrl = runtimeConfig.public.apiBaseUrl ?
-          `${runtimeConfig.public.apiBaseUrl}check-public-portal` :
-          '/api/check-public-portal'
-
-        const response: any = await $fetch(apiUrl, {
-          method: 'POST',
-          body: { url: workspace.url },
-        })
+        const response = await workspaceApi.checkPublicPortal(workspace.url)
 
         if (response.code === 200) {
-          const { workspace_id, email, password } = response.data
+          const { workspace_id, email, password } = response.data || {}
           if (!workspace_id || !email || !password) {
             await navigateTo({
               name: 'index',
@@ -203,10 +197,7 @@ export default function useCollageSidebar() {
         formData.append('name', authStore.user!.name || '')
         formData.append('phone', '')
 
-        await $fetch('digital/instance/update-user', {
-          method: 'POST',
-          body: formData,
-        })
+        await workspaceApi.updateUserInstance(formData)
 
         await authStore.getUser()
         setCurrentWorkspace(wp.workspace_id)

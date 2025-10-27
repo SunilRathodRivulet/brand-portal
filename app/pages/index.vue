@@ -105,6 +105,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useAppDataApi } from '~/composables/api/useAppDataApi'
 
 definePageMeta({
   layout: "login-layout",
@@ -115,6 +116,7 @@ const brandName = ref('')
 const loading = ref(false)
 const canGo = ref(true)
 const config = useRuntimeConfig()
+const appDataApi = useAppDataApi()
 
 // Custom validation
 const brandNameError = computed(() => {
@@ -132,15 +134,7 @@ const submitHandler = async () => {
   canGo.value = false
 
   try {
-    // Call verify domain API
-    const apiUrl = config.public.apiBaseUrl
-      ? `${config.public.apiBaseUrl}verify-domain`
-      : '/api/verify-domain'
-
-    const response = await $fetch(apiUrl, {
-      method: 'POST',
-      body: { url: brandName.value.trim() }
-    })
+    const response = await appDataApi.verifyDomain(brandName.value.trim())
 
     // Success - redirect to brand portal
     console.log('Domain verification successful:', response)

@@ -16,8 +16,8 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { useAppDataStore } from "~/stores";
-import { useRoute } from "vue-router";
+import { useAppDataStore } from "~/stores/appData";
+
 
 const props = defineProps({
   error: {

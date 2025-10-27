@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useAppDataApi } from '~/composables/api/useAppDataApi'
 
 export interface Banner {
   id: number
@@ -65,6 +66,7 @@ export const useAppDataStore = defineStore('appData', () => {
   const logo = ref('')
   const brand = ref<any>(null)
   const subscriptionFeatures = ref<any>({})
+  const appDataApi = useAppDataApi()
 
   // Actions
   const fetchBannerData = async () => {
@@ -104,19 +106,11 @@ export const useAppDataStore = defineStore('appData', () => {
   }
 
   const fetchBrandDetails = async (brandName: string) => {
-    const config = useRuntimeConfig()
-    const apiUrl = config.public.apiBaseUrl ?
-      `${config.public.apiBaseUrl}verify-domain` :
-      '/api/verify-domain'
+    const brandDetails = await appDataApi.verifyDomain(brandName)
 
-    const response: any = await $fetch(apiUrl, {
-      method: 'POST',
-      body: { url: brandName }
-    })
-    
-    brand.value = response.data
-    logo.value = response.data?.logo || ''
-    return response.data
+    brand.value = brandDetails
+    logo.value = brandDetails?.logo || ''
+    return brandDetails
   }
 
   const fetchDashboardData = async () => {

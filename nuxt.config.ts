@@ -15,7 +15,7 @@ export default defineNuxtConfig({
     strict: false,
     typeCheck: false
   },
-
+  
   // Auto-imports configuration for TypeScript
   imports: {
     dirs: [
@@ -36,10 +36,11 @@ export default defineNuxtConfig({
     transpile: ['vuetify'],
   },
   plugins: [
-    // '~/plugins/fetch.ts',
+    '~/plugins/api-client.ts',
     '~/plugins/pinia.ts',
     '~/plugins/auth-cookies.client.ts',
     '~/plugins/vuetify.ts',
+    '~/plugins/laravel-echo.client.ts',
   ],
   runtimeConfig: {
     // Private (server-only) keys
@@ -61,6 +62,9 @@ export default defineNuxtConfig({
       userPlaceHolderImg: process.env.USER_PLACEHOLDER_IMG,
       googleAuthUrl: process.env.GOOGLE_AUTH_URL,
       damBackendBaseUrl: process.env.ADMIN_FRONTEND_URL,
+      pusherKey: process.env.PUSHER_KEY,
+      pusherCluster: process.env.PUSHER_CLUSTER,
+      pusherAuthEndpoint: process.env.PUSHER_AUTH_ENDPOINT,
     },
   }
 })

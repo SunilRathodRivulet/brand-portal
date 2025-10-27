@@ -117,7 +117,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useAppDataStore } from "~/stores/appData";
-import { useRoute } from "vue-router";
+import { useHead } from "nuxt/app";
 import { useHelpers } from "~/composables/core/common/useHelpers";
 
 definePageMeta({

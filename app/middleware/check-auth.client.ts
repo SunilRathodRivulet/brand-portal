@@ -45,12 +45,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
   /* 3.  Anonymous visitor – try public-portal auto-login               */
   /* ------------------------------------------------------------------ */
   const brandName = to.params.brand_name as string
-  if (!brandName || brandName === 'login') {
+  console.log('isAuthenticated', authStore.isAuthenticated, 'brandName:', brandName, authStore.checkAuth())
+  if (!brandName || brandName === 'login' || authStore.isAuthenticated) {
     // Don't redirect if already on login page or no brand name
     return
   }
 
   try {
+    console.log('[Auth Middleware] Attempting public-portal auto-login for brand:', brandName)
     const { public: { apiBaseUrl } } = useRuntimeConfig()
     const { workspace_id, email, password } = await $fetch<{
       workspace_id: string; email: string; password: string

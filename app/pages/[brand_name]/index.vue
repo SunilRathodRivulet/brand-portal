@@ -70,6 +70,7 @@
 
 <script setup>
 const authStore = useAuthStore()
+const route = useRoute()
 
 // Define page middleware to check authentication
 definePageMeta({

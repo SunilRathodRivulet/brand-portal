@@ -26,7 +26,9 @@ export default defineNuxtPlugin(() => {
     userCookie.value = newUser
   }, { deep: true })
 
+  // Watch the internal token ref for changes
   watch(() => authStore.accessToken, (newToken) => {
     tokenCookie.value = newToken
+    console.log('🔄 Token synced to cookie:', newToken ? 'Token present' : 'No token')
   })
 })
