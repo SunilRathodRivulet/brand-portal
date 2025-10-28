@@ -182,10 +182,10 @@ export default function useCollageSidebar() {
       if (currentWorkspace?.is_domain === workspace.is_domain) {
         if (workspace.is_domain === 1) {
           await authStore.logout()
-          await navigateTo(
-            `http://${workspace.url}/${workspace.workspace_id}`,
-            { external: true }
-          )
+          // await navigateTo(
+          //   `http://${workspace.url}/${workspace.workspace_id}`,
+          //   { external: true }
+          // )
           return
         }
 
@@ -217,7 +217,7 @@ export default function useCollageSidebar() {
           ? `http://${workspace.url}/${workspace.workspace_id}`
           : `${runtimeConfig.public.baseUrl}/${workspace.url}`
 
-      await navigateTo(target, { external: true })
+      // await navigateTo(target, { external: true })
     } catch (e) {
       // no-op
     }
@@ -229,8 +229,8 @@ export default function useCollageSidebar() {
       await authStore.logout()
     } catch (error: any) {
     } finally {
-      if (brandName) await navigateTo(`/${brandName}`)
-      else window.location.replace('/')
+      // if (brandName) await navigateTo(`/${brandName}`)
+      // else window.location.replace('/')
     }
   }
 

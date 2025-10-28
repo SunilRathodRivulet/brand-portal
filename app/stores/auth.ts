@@ -116,6 +116,7 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     try {
       const data = await authApi.loginWithToken(oneTimeToken)
+      console.log('Token login data:', data)
 
       setUser(data.user)
       setToken(data.access_token)

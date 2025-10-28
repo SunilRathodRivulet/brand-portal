@@ -207,7 +207,7 @@ import Resource from '@/components/dashboard/Resource.vue'
 
 definePageMeta({
   layout: 'collage-layout',
-  middleware: ['check-url', 'check-auth-client'],
+  middleware: ['check-url', 'check-auth'],
 })
 
 const appDataStore = useAppDataStore()

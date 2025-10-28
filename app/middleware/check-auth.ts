@@ -42,37 +42,19 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   /* ------------------------------------------------------------------ */
-  /* 3.  Anonymous visitor – try public-portal auto-login               */
+  /* 3.  Anonymous visitor – redirect to login for protected pages      */
   /* ------------------------------------------------------------------ */
   const brandName = to.params.brand_name as string
-  console.log('isAuthenticated', authStore.isAuthenticated, 'brandName:', brandName, authStore.checkAuth())
-  if (!brandName || brandName === 'login' || authStore.isAuthenticated) {
-    // Don't redirect if already on login page or no brand name
+  const token = (to.params.token as string) || (to.params as any).token // for [token] route
+  console.log('Route:', to.path, 'isAuthenticated:', authStore.isAuthenticated, 'brandName:', brandName, 'token:', token)
+
+  // Skip auth check for login page, token-based access, or if already authenticated
+  if (!brandName || to.path.endsWith('/login') || token || authStore.isAuthenticated) {
     return
   }
 
-  try {
-    console.log('[Auth Middleware] Attempting public-portal auto-login for brand:', brandName)
-    const { public: { apiBaseUrl } } = useRuntimeConfig()
-    const { workspace_id, email, password } = await $fetch<{
-      workspace_id: string; email: string; password: string
-    }>(`${apiBaseUrl}check-public-portal`, {
-      method: 'POST',
-      body: { url: brandName }
-    })
-
-    if (!workspace_id || !email || !password) throw new Error('Bad portal response')
-
-    const { success } = await authStore.login(email, password, workspace_id)
-    if (!success) throw new Error('Auto-login failed')
-
-    // login already redirected on success; if we get here just continue
-  } catch {
-    // portal does not exist / login failed - redirect to login page
-    console.log('[Auth Middleware] Portal login failed, redirecting to login page')
-    await navigateTo(`/${brandName}/login`)
-    return
-  }
+  console.log('[Auth Middleware] Not authenticated on protected page, redirecting to login')
+  return navigateTo(`/${brandName}/login`)
 })
 
 /* -------------------------------------------------------------------- */
