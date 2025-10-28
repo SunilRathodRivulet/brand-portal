@@ -1,3 +1,5 @@
+import dayjs from "dayjs"
+
 export const useHelpers = () => {
   const authStore = useAuthStore()
   const appDataStore = useAppDataStore()
@@ -9,13 +11,13 @@ export const useHelpers = () => {
       ({ workspace_id }) => parseInt(workspace_id) === parseInt(workspaceId)
     )
 
-    if (workspace && process.client) {
+    if (workspace && import.meta.client) {
       localStorage.setItem('currentWorkspace', JSON.stringify(workspace))
     }
   }
 
   const _auth = () => {
-    if (authStore.isAuthenticated && process.client) {
+    if (authStore.isAuthenticated && import.meta.client) {
       const storedWorkspace = localStorage.getItem('currentWorkspace')
       return storedWorkspace ? JSON.parse(storedWorkspace) : null
     }
@@ -43,14 +45,93 @@ export const useHelpers = () => {
   // Use reactive value to track store changes
   const brandDetail = computed({
     get: () => appDataStore.brand,
-    set: (value) => {} // readonly, ignore sets
+    set: (_value) => { } // readonly, ignore sets
   })
+
+  const getWorkspaceId = () => {
+    if (authStore.isAuthenticated) {
+      return _auth()?.workspace_id || authStore.user.workspace_id
+    }
+    return null
+  }
+
+  const toHumanlySize = (size: number | string) => {
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+    size = Number(size)
+    let index = 0
+    while (size > 900) {
+      size /= 1024
+      index += 1
+    }
+
+    return (
+      Number(Math.round(size * 100) / 100).toLocaleString() + ' ' + sizes[index]
+    )
+  }
+
+  const formatDate = (date: string | Date): string => dayjs(date).format("MMM D, YYYY");
+
+  const toQueryString = (obj: Record<string, unknown>) => {
+    const params: string[] = []
+
+    if (!obj || typeof obj !== 'object') return ''
+
+    Object.entries(obj).forEach(([key, value]: [string, unknown]) =>
+      params.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    )
+
+    return params.join('&')
+  }
+
+  const downloadAsset = (attachment_type: string | number, assets_id: string | number) => {
+    const downloadURL = `/get_assets?${toQueryString({
+      attachment_type,
+      assets_id,
+      is_backend_download: 0,
+    })}`
+
+    const link = document.createElement('a')
+    link.href = window.location.origin + downloadURL
+    document.body.appendChild(link)
+    link.click()
+  }
+  const downloadCollectionAsset = (
+    attachment_type: string | number,
+    assets_id: string | number,
+    collection_id: string | number
+  ) => {
+    const downloadURL = `/get_assets?${toQueryString({
+      attachment_type,
+      assets_id,
+      collection_id,
+      is_backend_download: 0,
+    })}`
+
+    const link = document.createElement('a')
+    link.href = window.location.origin + downloadURL
+    document.body.appendChild(link)
+    link.click()
+  }
+
+  const getErrorMessage = (e: any) => {
+    if (e) {
+      const { data } = e.response || {}
+      return (data && data.message) || e.message || e
+    }
+  }
 
   return {
     setCurrentWorkspace,
     _auth,
     getBrandName,
     brandName,
-    brandDetail
+    brandDetail,
+    getWorkspaceId,
+    toHumanlySize,
+    formatDate,
+    toQueryString,
+    downloadAsset,
+    downloadCollectionAsset,
+    getErrorMessage,
   }
 }

@@ -1,328 +1,478 @@
 <template>
-  <div class="dashboard-page">
-    <div class="welcome-section">
-      <h1>Welcome to your Dashboard!</h1>
-      <p>🎉 You are successfully logged in and your authentication state is now persisted!</p>
+  <div class="brand-index">
+    <div
+      v-if="bannerData.length"
+      class="hero-section hero-carousel owl-carousel mainBannerSlider"
+    >
+      <div v-for="banner in bannerData" :key="banner.id" class="item">
+        <a :href="banner.url" target="_blank">
+          <img :src="banner.image" :alt="banner.title" />
+          <div v-if="banner.description" class="content">
+            <div class="content-wepper">
+              <h1>
+                {{ banner.description }}
+              </h1>
+            </div>
+          </div>
+        </a>
+      </div>
     </div>
 
-    <div class="auth-status">
-      <h3>Authentication Status:</h3>
-
-      <div class="status-card success">
-        <div class="status-icon">✅</div>
-        <div class="status-content">
-          <h4>Authentication Persistent</h4>
-          <p>Your login state will survive page refreshes and browser sessions</p>
-          <p class="status-details">
-            <strong>User:</strong> {{ authStore.user?.name || authStore.user?.email || 'N/A' }}<br>
-            <strong>Status:</strong> {{ authStore.isAuthenticated ? 'Active' : 'Inactive' }}
-          </p>
-        </div>
-      </div>
-
-      <div class="status-card info">
-        <div class="status-icon">🔒</div>
-        <div class="status-content">
-          <h4>SSR-Safe Authentication</h4>
-          <p>Authentication fully leverages Nuxt 4's SSR capabilities</p>
-          <p class="status-details">
-            <strong>Storage:</strong> Secure httpOnly cookies<br>
-            <strong>Security:</strong> XSS protection with httpOnly<br>
-            <strong>Server:</strong> Pre-rendered with auth state
-          </p>
-        </div>
-      </div>
-
-      <div class="debug-section">
-        <h4>Debug Information (for development)</h4>
-
-        <div style="margin: 1rem 0; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
-          <h5>SSR Cookie-based Auth Data</h5>
-          <p><strong>User:</strong> {{ JSON.stringify(authStore.user, null, 2) }}</p>
-          <p><strong>Token present:</strong> {{ !!authStore.accessToken }}</p>
-          <p><strong>isAuthenticated:</strong> {{ authStore.isAuthenticated }}</p>
-        </div>
-
-        <div style="margin: 1rem 0; padding: 1rem; background: #e3f2fd; border-radius: 4px;">
-          <h5>Cookies (Browser DevTools → Application → Cookies)</h5>
-          <p><strong>auth_user:</strong> {{ cookieStatus.authUser }}</p>
-          <p><strong>auth_token:</strong> {{ cookieStatus.authToken }}</p>
-          <p style="color: #1976d2; font-size: 0.9rem;">
-            🚀 SSR-safe authentication using secure httpOnly cookies
-          </p>
+    <div
+      v-if="!user.is_slider && tileData && tileData.length"
+      class="trending-sec grid-tile resource-wrapper tiles-list"
+    >
+      <div class="common-box">
+        <div class="table-list-view">
+          <ul class="tbody">
+            <template v-for="tile in tileData">
+              <Tile :key="tile.id" :tile="tile" />
+            </template>
+          </ul>
         </div>
       </div>
     </div>
 
-    <div class="actions-section">
-      <h3>Actions</h3>
-      <div class="action-buttons">
-        <button @click="handleLogout" class="logout-btn">
-          🚪 Logout
-        </button>
-        <button @click="handleRefresh" class="refresh-btn">
-          🔄 Test Page Refresh
-        </button>
+    <div
+      v-if="user.is_slider && tileData && tileData.length"
+      class="trending-sec grid-tile resource-wrapper tiles-list"
+      :class="{ 'carousel-no-padding': tileData.length === 4 }"
+    >
+      <div class="common-box">
+        <div class="table-list-view">
+          <ul class="tbody owl-carousel tiles-carousel fourSlide">
+            <template v-for="tile in tileData">
+              <Tile :key="tile.id" :tile="tile" />
+            </template>
+          </ul>
+        </div>
       </div>
     </div>
+
+    <template
+      v-if="
+        showTrending &&
+        dashboardData &&
+        dashboardData.trending_data &&
+        dashboardData.trending_data.length
+      "
+    >
+      <div ref="trending" class="section-title">
+        <h4>Trending</h4>
+      </div>
+      <div class="trending-sec grid-tile resource-wrapper">
+        <div class="common-box">
+          <div class="table-list-view">
+            <ul class="tbody fourSlide owl-carousel tiles-carousel">
+              <template v-for="file in dashboardData.trending_data">
+                <Resource
+                  :key="file.id"
+                  :file="file"
+                  emit-share
+                  hide-select
+                  @share="onShareFile"
+                  @emitCart="toggleCart(file)"
+                />
+              </template>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template v-if="dashboardData && showRecentUploads">
+      <div
+        v-if="
+          dashboardData.recent_uploads.images.length ||
+          dashboardData.recent_uploads.documents.length ||
+          dashboardData.recent_uploads.videos.length ||
+          dashboardData.recent_uploads.audios.length
+        "
+        ref="recent"
+        class="section-title"
+      >
+        <h4>Recent Uploaded</h4>
+      </div>
+
+      <template v-for="(files, key) in dashboardData.recent_uploads">
+        <template v-if="files.length">
+          <div :key="key" class="mini-title">
+            <!-- <input id="Images" type="checkbox" class="form-check-input" /> -->
+            <label>{{ keytoTitle(key) }}</label>
+            <nuxt-link
+              :to="{
+                name: 'brand_name-folders',
+                params: { brand_name: $getBrandName() },
+                hash: `#${normalizedForNavitor(key)}`,
+              }"
+              class="browse-box"
+            >
+              <span>
+                Browse
+                {{ dashboardData[`total_${key}`] }} {{ keytoTitle(key) }}
+              </span>
+            </nuxt-link>
+          </div>
+          <div
+            :key="`files-${key}`"
+            class="recentuploads-sec grid-tile resource-wrapper"
+            :class="{
+              mb2: key == Object.keys(dashboardData.recent_uploads).pop(),
+            }"
+          >
+            <div class="common-box">
+              <div class="table-list-view">
+                <ul class="tbody fourSlide owl-carousel tiles-carousel">
+                  <template v-for="file in files">
+                    <Resource
+                      :key="file.id"
+                      :file="file"
+                      emit-share
+                      hide-select
+                      @share="onShareFile"
+                      @emitCart="toggleCart(file)"
+                    />
+                  </template>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <div :key="key" class="mini-title">
+            <label for="Images" class="check-label">{{
+              keytoTitle(key)
+            }}</label>
+          </div>
+          <div
+            :key="`files-${key}`"
+            class="recentuploads-sec grid-tile resource-wrapper"
+          >
+            <div class="common-box">
+              <div :key="key" class="no-data-found my-5">
+                <div class="inner w-100">
+                  <svg
+                    id="Layer_1"
+                    class="no-record-icon darkgray"
+                    style="height: 150px"
+                    version="1.1"
+                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns:xlink="http://www.w3.org/1999/xlink"
+                    x="0px"
+                    y="0px"
+                    viewBox="0 0 131.3 156.8"
+                    xml:space="preserve"
+                  >
+                    <g id="Group_4457" transform="translate(-190.348 -177.624)">
+                      <path
+                        id="Path_3564"
+                        class="fill-color"
+                        d="M285.2,214.4c-1.5,0-2.6,1.2-2.6,2.6c0,1.5,1.2,2.6,2.6,2.6h4.4v4.4c0,1.5,1.2,2.6,2.6,2.6s2.6-1.2,2.6-2.6l0,0l0,0v-4.4h4.4c1.5,0,2.6-1.2,2.6-2.6s-1.2-2.6-2.6-2.6l0,0h-4.4V210c0-1.5-1.2-2.6-2.6-2.6s-2.6,1.2-2.6,2.6v4.4H285.2z"
+                      />
+                      <path
+                        id="Path_3565"
+                        class="fill-color"
+                        d="M321.6,199.8c0.3-1.5-9.1-9.6-15.5-16.4c-3.9-3.7-7.4-9-9.5-3.1v15.5c0,3.8,3.1,6.8,6.8,6.8h12.8v95.1c0,0.9-0.7,1.6-1.6,1.6H227c-0.9,0-1.6-0.7-1.6-1.6V184.5c0-0.9,0.7-1.6,1.6-1.6h59.4c1.5,0,2.6-1.2,2.6-2.6s-1.2-2.6-2.6-2.6l0,0H227c-3.8,0-6.8,3.1-6.8,6.8v8.1h-8.1c-3.8,0-6.8,3.1-6.8,6.8v8.1h-8.1c-3.8,0-6.8,3.1-6.8,6.8v113.2c0,3.8,3.1,6.8,6.8,6.8H285c3.8,0,6.8-3.1,6.8-6.8v-8.1h8.1c3.8,0,6.8-3.1,6.8-6.8v-8.1h8.1c3.8,0,6.8-3.1,6.8-6.8V200C321.7,199.9,321.7,199.9,321.6,199.8L321.6,199.8z M301.5,312.6c0,0.9-0.7,1.6-1.6,1.6h-65.2c-1.5,0-2.6,1.2-2.6,2.6s1.2,2.6,2.6,2.6h51.8v8.1c0,0.9-0.7,1.6-1.6,1.6h-87.8c-0.9,0-1.6-0.7-1.6-1.6V214.3c0-0.9,0.7-1.6,1.6-1.6h8.1v99.9c0,3.8,3.1,6.8,6.8,6.8h10.4c1.5,0,2.6-1.2,2.6-2.6s-1.2-2.6-2.6-2.6l0,0h-10.4c-0.9,0-1.6-0.7-1.6-1.6V199.4c0-0.9,0.7-1.6,1.6-1.6h8.1v99.9c0,3.8,3.1,6.8,6.8,6.8h74.4L301.5,312.6L301.5,312.6z M303.5,197.3c-0.9,0-1.6-0.7-1.6-1.6v-9.1l10.7,10.7L303.5,197.3z"
+                      />
+                    </g>
+                  </svg>
+
+                  <p>You don't have files</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </template>
+    </template>
+
+    <DownloadingIndicator />
+
+    <client-only>
+      <ShareFile
+        ref="shareDialog"
+        :files="(shareFile && [shareFile]) || []"
+        type="folder"
+      />
+    </client-only>
+    <AddToCartModal
+      v-if="selectedFile && orderManagementAllowed"
+      ref="cartDialog"
+      :file="selectedFile"
+    />
   </div>
 </template>
 
-<script setup>
-const authStore = useAuthStore()
-const route = useRoute()
-
-// Define page middleware to check authentication
-definePageMeta({
-  layout: "collage-layout",
-  middleware: ['check-url', 'check-auth-client']
-})
-
-const getCookie = (name) => {
-  if (!process.client) return null
-  const value = `; ${document.cookie}`
-  const parts = value.split(`; ${name}=`)
-  if (parts.length === 2) return parts.pop()?.split(';').shift()
-  return null
-}
-
-const cookieStatus = computed(() => {
-  // Hydration-safe cookie status - consistent between server and client
-  const authUserStatus = process.client ? (getCookie('auth_user') ? 'present' : 'not set') : 'not available (SSR)'
-  const authTokenStatus = process.client ? (getCookie('auth_token') ? 'present (httpOnly)' : 'not set') : 'not available (SSR)'
-
-  return {
-    authUser: authUserStatus,
-    authToken: authTokenStatus
-  }
-})
-
-const handleLogout = async () => {
-  try {
-    await authStore.logout()
-  } catch (error) {
-    console.error('Logout error:', error)
-  }
-}
-
-const handleRefresh = () => {
-  // This will test if SSR persistence works - warn user first
-  if (process.client) {
-    const confirmed = confirm('This will refresh the page to test if SSR authentication persists. Are you sure?')
-    if (confirmed) {
-      window.location.reload()
+<script>
+import Tile from '@/components/dam/Tile.vue'
+export default {
+  components: {
+    Tile,
+  },
+  layout: 'app-sidebar',
+  middleware: ['check-url', 'check-auth'],
+  data() {
+    return {
+      shareFile: null,
+      heroNavigateTo: 0,
+      selectedFile: null,
     }
-  }
+  },
+  computed: {
+    orderManagementAllowed() {
+      return (
+        !!this.$auth.user.subscription_features?.asset_order_management
+          ?.enable && this.$auth.user.email !== 'anonymous@collage.inc'
+      )
+    },
+    bannerData() {
+      return [...this.$store.state.appData.bannerData].sort(
+        ({ postion: a, postions: b }) => a - b
+      )
+    },
+    tileData() {
+      return [...this.$store.state.appData.tileData].sort(
+        ({ postion: a, postions: b }) => a - b
+      )
+    },
+    dashboardData() {
+      return this.$store.state.appData.dashboardData
+    },
+    showTrending() {
+      return this.$auth.user.settings?.is_trading
+    },
+    showRecentUploads() {
+      return this.$auth.user.settings?.is_recent_upload
+    },
+    user() {
+      return this.$auth.user
+    },
+  },
+  watch: {
+    '$store.state.appData.leftMenuOpen': {
+      handler() {
+        this.onHeroChanged()
+      },
+    },
+    '$store.state.appData.scrollTo'(n) {
+      switch (n) {
+        case 'recent':
+          this.scrollToRecent()
+          break
+        case 'trending':
+          this.scrollToTrending()
+          break
+      }
+    },
+  },
+  mounted() {
+    this.$store.dispatch('product/fetchOrderAlertList')
+    this.$store.dispatch('appData/fetchBannerData').then(() => {
+      this.$nextTick(() => {
+        setTimeout(() => {
+          this.bannerSliderTrigger()
+        }, 100)
+      })
+    })
+    this.$store.dispatch('appData/fetchTileData')
+    this.$store.dispatch('appData/fetchFolders')
+    this.$store.dispatch('appData/fetchDashboardData').then(() => {
+      if (this.$store.state.appData.scrollToRecent) {
+        if (this.$store.state.appData.scrollTo === 'recent') {
+          this.scrollToRecent()
+        } else if (this.$store.state.appData.scrollTo === 'trending') {
+          this.scrollToTrending()
+        }
+      }
+      this.$nextTick(() => {
+        setTimeout(() => {
+          this.otherSliderTrigger()
+        }, 100)
+      })
+    })
+  },
+  head() {
+    // Extract the dynamic workspace and brand name logic
+    const workspace = this.$auth?.user?.accessibleInstances?.find(
+      ({ workspace_id }) =>
+        parseInt(workspace_id) === parseInt(this.$getWorkspaceId())
+    )
+    const brandName = workspace?.brand_name || 'Collage Inc'
+    const userLogo =
+      workspace?.logo || this.$config.baseUrl + '/collage-meta-icon.png'
+
+    return {
+      title: `${brandName} Brand Portal by Collage Inc`,
+      htmlAttrs: {
+        lang: 'en',
+      },
+      meta: [
+        { charset: 'utf-8' },
+        {
+          hid: 'og:image',
+          property: 'og:image',
+          content: userLogo,
+        },
+        {
+          hid: 'og:image:alt',
+          property: 'og:image:alt',
+          content: `${brandName} Logo`,
+        },
+        {
+          property: 'og:image:width',
+          content: '1200',
+        },
+        {
+          property: 'og:image:height',
+          content: '630',
+        },
+        {
+          property: 'og:image:type',
+          content: 'image/png',
+        },
+        {
+          name: 'twitter:card',
+          content: 'summary_large_image',
+        },
+        {
+          hid: 'og:title',
+          property: 'og:title',
+          content: `${brandName} Brand Portal by Collage Inc`,
+        },
+        {
+          property: 'og:locale',
+          content: 'en_US',
+        },
+        {
+          property: 'og:type',
+          content: 'website',
+        },
+        {
+          property: 'og:url',
+          content: this.$config.baseUrl,
+        },
+        {
+          property: 'og:site_name',
+          content: 'Collage',
+        },
+      ],
+      link: [
+        {
+          rel: 'icon',
+          type: 'image/x-icon',
+          href: this.$auth.user?.branding?.brand_favicon || '/favicon.png',
+          hid: 'favicon',
+        },
+      ],
+    }
+  },
+  methods: {
+    toggleCart(file) {
+      this.selectedFile = file
+      this.$nextTick(() => {
+        this.$refs.cartDialog.toggleModel()
+      })
+    },
+    bannerSliderTrigger() {
+      const $owl = window.$('.mainBannerSlider')
+      const owl = $owl.owlCarousel({
+        loop: true,
+        nav: false,
+        dots: true,
+        autoplay: true,
+        mouseDrag: false,
+        responsiveClass: true,
+        autoplayTimeout: 3000,
+        speed: 800,
+        responsiveBaseElement: '.body-content',
+        responsive: {
+          0: {
+            items: 1,
+          },
+        },
+      })
+      window.$(document).on('click', '.menu-show', function () {
+        window
+          .$('.body-content')
+          .one(
+            'webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend',
+            function (event) {
+              // alert('h')
+              owl.trigger('refresh.owl.carousel')
+            }
+          )
+      })
+    },
+    otherSliderTrigger() {
+      const $owl = window.$('.fourSlide')
+      const owl = $owl.owlCarousel({
+        nav: true,
+        dots: false,
+        responsiveClass: true,
+        margin: 0,
+        responsiveBaseElement: '.body-content',
+        navText: [
+          '<span><svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="25.811" height="50.121" viewBox="0 0 25.811 50.121"><path id="Icon_feather-chevron-down" data-name="Icon feather-chevron-down" d="M0,0,24,24,48,0" transform="translate(24.75 1.061) rotate(90)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg></span>',
+          '<span><svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="25.811" height="50.121" viewBox="0 0 25.811 50.121"><path id="Icon_feather-chevron-down" data-name="Icon feather-chevron-down" d="M0,0,24,24,48,0" transform="translate(24.75 1.061) rotate(90)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg></span>',
+        ],
+        responsive: {
+          0: {
+            items: 4,
+          },
+        },
+      })
+      window.$(document).on('click', '.menu-show', function () {
+        window
+          .$('.body-content')
+          .one(
+            'webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend',
+            function (event) {
+              // alert('h')
+              owl.trigger('refresh.owl.carousel')
+            }
+          )
+      })
+    },
+    onHeroChanged() {
+      // this.$nextTick(() => {
+      //   const hero = this.$refs.hero
+      //   if (!hero) return
+      //   const page = hero.currentPage
+      //   if (page === this.bannerData.length - 1) {
+      //     this.heroNavigateTo = [page, false]
+      //     setTimeout(() => {
+      //       this.heroNavigateTo = [0, false]
+      //     }, 1500)
+      //   }
+      // })
+    },
+    scrollToTrending() {
+      this.$refs.trending.scrollIntoView()
+      this.resetScrolling()
+    },
+    scrollToRecent() {
+      this.$refs.recent.scrollIntoView()
+      this.resetScrolling()
+    },
+    resetScrolling() {
+      const scrollingState = false
+      const scrollTo = ''
+      this.$store.dispatch('appData/changeScrolling', {
+        scrollingState,
+        scrollTo,
+      })
+    },
+    onShareFile(file) {
+      this.$nextTick(() => this.$refs.shareDialog.toggleModel())
+      this.shareFile = file
+    },
+    keytoTitle(key) {
+      return key[0].toUpperCase() + key.slice(1)
+    },
+    normalizedForNavitor(key) {
+      if (key === 'documents') return 'application'
+
+      return key.slice(0, key.length - 1)
+    },
+  },
 }
-
-onMounted(() => {
-  if (process.client) {
-    console.log('=== Nuxt 4 SSR Dashboard Page Authentication Check ===')
-    console.log('User is authenticated:', authStore.isAuthenticated)
-    console.log('User data:', authStore.user)
-    console.log('Token present:', !!authStore.accessToken)
-
-    // Check for SSR cookies
-    const authUserCookie = getCookie('auth_user')
-    const authTokenCookie = getCookie('auth_token')
-    console.log('Cookies present - auth_user:', !!authUserCookie, 'auth_token:', !!authTokenCookie)
-
-    // Additional security check: if no auth_token cookie, redirect to login
-    if (!authTokenCookie) {
-      console.error('❌ No auth_token cookie found - redirecting to login for security')
-      const brandName = route.params.brand_name
-      navigateTo(`/${brandName}/login`)
-      return
-    }
-
-    if (authStore.isAuthenticated && (authUserCookie || authTokenCookie)) {
-      console.log('✅ SSR authentication is working - auth state persists across page refreshes')
-    } else {
-      console.log('⚠️ SSR authentication may not be working correctly')
-    }
-
-    console.log('🚀 Nuxt 4 SSR capabilities fully utilized for authentication')
-  }
-})
-
-
 </script>
-
-<style scoped>
-.dashboard-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.welcome-section {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-
-.welcome-section h1 {
-  color: #2e7d32;
-  font-size: 2.5rem;
-  margin: 0 0 1rem 0;
-  font-weight: 600;
-}
-
-.welcome-section p {
-  color: #666;
-  font-size: 1.2rem;
-  margin: 0;
-}
-
-.auth-status {
-  margin-bottom: 3rem;
-}
-
-.auth-status h3 {
-  color: #333;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-}
-
-.status-card {
-  display: flex;
-  align-items: flex-start;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  border-radius: 8px;
-  border-left: 4px solid;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.status-card.success {
-  background: #e8f5e8;
-  border-left-color: #4caf50;
-}
-
-.status-card.info {
-  background: #e3f2fd;
-  border-left-color: #2196f3;
-}
-
-.status-icon {
-  font-size: 2rem;
-  margin-right: 1rem;
-  min-width: 2rem;
-}
-
-.status-content h4 {
-  margin: 0 0 0.5rem 0;
-  color: #333;
-  font-size: 1.1rem;
-}
-
-.status-content p {
-  margin: 0 0 0.5rem 0;
-  color: #666;
-  line-height: 1.5;
-}
-
-.status-details {
-  margin: 0.5rem 0 0 0;
-  font-size: 0.9rem;
-  color: #555;
-  line-height: 1.4;
-}
-
-.debug-section {
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid #ddd;
-}
-
-.debug-section h4 {
-  color: #666;
-  font-size: 1.1rem;
-  margin-bottom: 1rem;
-}
-
-.debug-section h5 {
-  margin: 0 0 0.5rem 0;
-  color: #444;
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-.actions-section {
-  margin-top: 3rem;
-  text-align: center;
-}
-
-.actions-section h3 {
-  color: #333;
-  margin-bottom: 1.5rem;
-  font-size: 1.3rem;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.action-buttons button {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  min-width: 120px;
-}
-
-.logout-btn {
-  background: #f44336;
-  color: white;
-}
-
-.logout-btn:hover {
-  background: #d32f2f;
-  transform: translateY(-1px);
-}
-
-.refresh-btn {
-  background: #2196f3;
-  color: white;
-}
-
-.refresh-btn:hover {
-  background: #1976d2;
-  transform: translateY(-1px);
-}
-
-@media (max-width: 768px) {
-  .dashboard-page {
-    padding: 1rem;
-  }
-
-  .welcome-section h1 {
-    font-size: 2rem;
-  }
-
-  .status-card {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .status-icon {
-    margin-right: 0;
-    margin-bottom: 1rem;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .action-buttons button {
-    width: 100%;
-    max-width: 200px;
-  }
-}
-</style>

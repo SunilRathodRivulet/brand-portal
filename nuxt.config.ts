@@ -41,6 +41,8 @@ export default defineNuxtConfig({
     '~/plugins/auth-cookies.client.ts',
     '~/plugins/vuetify.ts',
     '~/plugins/laravel-echo.client.ts',
+    '~/plugins/stream-saver.client.ts',
+    '~/plugins/snackbar.client.ts',
   ],
   runtimeConfig: {
     // Private (server-only) keys

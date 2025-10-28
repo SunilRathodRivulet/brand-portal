@@ -1,0 +1,23 @@
+<template>
+  <svg
+    width="800px"
+    height="800px"
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M7 1H2V15H7V1Z" :fill="color" />
+    <path d="M14 1H9V15H14V1Z" :fill="color" />
+  </svg>
+</template>
+
+<script setup>
+const props = defineProps({
+  color: {
+    type: String,
+    default: "#3D3D3D",
+  },
+});
+</script>
+
+<style scoped></style>
