@@ -1,4 +1,8 @@
 import dayjs from "dayjs"
+import { useAuthStore } from '~/stores/auth'
+import { useAppDataStore } from '~/stores/appData'
+import { useRoute } from '#app'
+import { computed } from 'vue'
 
 export const useHelpers = () => {
   const authStore = useAuthStore()
@@ -120,6 +124,29 @@ export const useHelpers = () => {
     }
   }
 
+  const sortBy = (field: string, reverse: boolean, primer?: (x: any) => any, ignoreCase = false) => {
+    const key = primer ? (x: any) => primer(x[field]) : (x: any) => x[field]
+    const sortOrder: number = reverse ? -1 : 1
+
+    return function (a: any, b: any) {
+      a = key(a)
+      b = key(b)
+
+      if (a === null) return sortOrder * 1
+      else if (b === null) return sortOrder * -1
+
+      if (ignoreCase) {
+        a = a && a.toUpperCase()
+        b = b && b.toUpperCase()
+      }
+
+      // if (typeof a === "number" && typeof b === "number")
+      //   return sortOrder * (a - b);
+
+      return sortOrder * (Number(a > b) - Number(b > a))
+    }
+  }
+
   return {
     setCurrentWorkspace,
     _auth,
@@ -133,5 +160,6 @@ export const useHelpers = () => {
     downloadAsset,
     downloadCollectionAsset,
     getErrorMessage,
+    sortBy,
   }
 }

@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
 import { useAppDataApi } from '~/composables/api/useAppDataApi'
+import { useAuthStore } from '~/stores/auth'
+import { useSnackbar } from '~/composables/useSnackbar'
+import { useHelpers } from '~/composables/core/common/useHelpers'
 
 export interface Banner {
   id: number
@@ -16,6 +19,7 @@ export interface Tile {
   icon: string
   url: string
   position: number
+  image: string
 }
 
 export interface File {
@@ -67,42 +71,74 @@ export const useAppDataStore = defineStore('appData', () => {
   const brand = ref<any>(null)
   const subscriptionFeatures = ref<any>({})
   const appDataApi = useAppDataApi()
+  const authStore = useAuthStore()
+  const snackbar = useSnackbar()
+
+  const { getWorkspaceId, sortBy } = useHelpers()
 
   // Actions
-  const fetchBannerData = async () => {
-    bannerData.value = [
-      {
-        id: 1,
-        title: 'Welcome',
-        description: 'Welcome to our DAM',
-        image: '/placeholder-banner.jpg',
-        url: '#',
-        position: 1
-      }
-    ]
-  }
+  const fetchDashboardData = async () => {
+    if (!authStore.isAuthenticated) return
 
+    dashboardData.value = null
+    const workspace = authStore.user?.accessibleInstances?.find(
+      ({ workspace_id }) =>
+        parseInt(workspace_id) === parseInt(getWorkspaceId())
+    )
+
+    if (!workspace) return
+
+    try {
+      const data = await appDataApi.getDashboardData(getWorkspaceId(), workspace.instance_id)
+      dashboardData.value = data
+      return data
+    } catch (error) {
+      snackbar.showError(error)
+    }
+  }
   const fetchTileData = async () => {
-    tileData.value = [
-      {
-        id: 1,
-        title: 'Images',
-        icon: 'mdi-camera',
-        url: '/folders#images',
-        position: 1
-      },
-      {
-        id: 2,
-        title: 'Documents',
-        icon: 'mdi-file-document',
-        url: '/folders#documents',
-        position: 2
-      }
-    ]
+    if (!authStore.isAuthenticated) return
+
+    try {
+      const data = await appDataApi.getTiles(getWorkspaceId())
+      tileData.value = data
+      return data
+    } catch (error) {
+      snackbar.showError(error)
+    }
+  }
+  const fetchBannerData = async () => {
+    if (!authStore.isAuthenticated) return
+
+    const workspace = authStore.user?.accessibleInstances?.find(
+      ({ workspace_id }) =>
+        parseInt(workspace_id) === parseInt(getWorkspaceId())
+    )
+
+    if (!workspace) return
+
+    try {
+      const data = await appDataApi.getBanners(getWorkspaceId(), workspace.instance_id)
+      bannerData.value = data
+      return data
+    } catch (error) {
+      snackbar.showError(error)
+    }
   }
 
-  const fetchFolders = async () => {
-    folders.value = []
+  const fetchFolders = async (subfolderList: boolean) => {
+    if (!authStore.isAuthenticated) return
+
+    try {
+      const data = await appDataApi.getFolders(getWorkspaceId(), subfolderList)
+      const dataSort = data.sort(
+        sortBy('folder_name', false, null, true)
+      )
+      folders.value = dataSort
+      return data
+    } catch (error) {
+      snackbar.showError(error)
+    }
   }
 
   const fetchBrandDetails = async (brandName: string) => {
@@ -111,22 +147,6 @@ export const useAppDataStore = defineStore('appData', () => {
     brand.value = brandDetails
     logo.value = brandDetails?.logo || ''
     return brandDetails
-  }
-
-  const fetchDashboardData = async () => {
-    dashboardData.value = {
-      trending_data: [],
-      recent_uploads: {
-        images: [],
-        documents: [],
-        videos: [],
-        audios: []
-      },
-      total_images: 0,
-      total_documents: 0,
-      total_videos: 0,
-      total_audios: 0
-    }
   }
 
   const changeScrolling = (payload: { scrollingState: boolean; scrollTo: string }) => {

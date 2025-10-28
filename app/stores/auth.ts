@@ -120,7 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
       setUser(data.user)
       setToken(data.access_token)
 
-      await navigateTo('/')
+      // await navigateTo('/')
       return { success: true }
     } catch (e: any) {
       console.error('Token login failed', e)

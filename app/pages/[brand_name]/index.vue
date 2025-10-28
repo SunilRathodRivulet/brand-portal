@@ -19,14 +19,14 @@
     </div>
 
     <div
-      v-if="!user.is_slider && tileData && tileData.length"
+      v-if="!user?.is_slider && tileData && tileData.length"
       class="trending-sec grid-tile resource-wrapper tiles-list"
     >
       <div class="common-box">
         <div class="table-list-view">
           <ul class="tbody">
-            <template v-for="tile in tileData">
-              <Tile :key="tile.id" :tile="tile" />
+            <template v-for="tile in tileData" :key="tile.id">
+              <Tile :tile="tile" />
             </template>
           </ul>
         </div>
@@ -34,15 +34,15 @@
     </div>
 
     <div
-      v-if="user.is_slider && tileData && tileData.length"
+      v-if="user?.is_slider && tileData && tileData.length"
       class="trending-sec grid-tile resource-wrapper tiles-list"
       :class="{ 'carousel-no-padding': tileData.length === 4 }"
     >
       <div class="common-box">
         <div class="table-list-view">
           <ul class="tbody owl-carousel tiles-carousel fourSlide">
-            <template v-for="tile in tileData">
-              <Tile :key="tile.id" :tile="tile" />
+            <template v-for="tile in tileData" :key="tile.id">
+              <Tile :tile="tile" />
             </template>
           </ul>
         </div>
@@ -64,14 +64,12 @@
         <div class="common-box">
           <div class="table-list-view">
             <ul class="tbody fourSlide owl-carousel tiles-carousel">
-              <template v-for="file in dashboardData.trending_data">
+              <template v-for="file in dashboardData.trending_data" :key="file.id">
                 <Resource
-                  :key="file.id"
-                  :file="file"
+                  :file="file as any"
                   emit-share
                   hide-select
                   @share="onShareFile"
-                  @emitCart="toggleCart(file)"
                 />
               </template>
             </ul>
@@ -101,7 +99,7 @@
             <nuxt-link
               :to="{
                 name: 'brand_name-folders',
-                params: { brand_name: $getBrandName() },
+                params: { brand_name: getBrandName() },
                 hash: `#${normalizedForNavitor(key)}`,
               }"
               class="browse-box"
@@ -122,14 +120,13 @@
             <div class="common-box">
               <div class="table-list-view">
                 <ul class="tbody fourSlide owl-carousel tiles-carousel">
-                  <template v-for="file in files">
+                  <template v-for="file in files" :key="file.id">
                     <Resource
-                      :key="file.id"
-                      :file="file"
+
+                      :file="file as any"
                       emit-share
                       hide-select
                       @share="onShareFile"
-                      @emitCart="toggleCart(file)"
                     />
                   </template>
                 </ul>
@@ -185,294 +182,129 @@
       </template>
     </template>
 
-    <DownloadingIndicator />
+
 
     <client-only>
-      <ShareFile
+      <!-- <ShareFile
         ref="shareDialog"
         :files="(shareFile && [shareFile]) || []"
         type="folder"
-      />
+        @close="closeShareDialog"
+      /> -->
+      <!-- DownloadIndicator component import pending -->
     </client-only>
-    <AddToCartModal
-      v-if="selectedFile && orderManagementAllowed"
-      ref="cartDialog"
-      :file="selectedFile"
-    />
   </div>
 </template>
 
-<script>
-import Tile from '@/components/dam/Tile.vue'
-export default {
-  components: {
-    Tile,
-  },
-  layout: 'app-sidebar',
-  middleware: ['check-url', 'check-auth'],
-  data() {
-    return {
-      shareFile: null,
-      heroNavigateTo: 0,
-      selectedFile: null,
-    }
-  },
-  computed: {
-    orderManagementAllowed() {
-      return (
-        !!this.$auth.user.subscription_features?.asset_order_management
-          ?.enable && this.$auth.user.email !== 'anonymous@collage.inc'
-      )
-    },
-    bannerData() {
-      return [...this.$store.state.appData.bannerData].sort(
-        ({ postion: a, postions: b }) => a - b
-      )
-    },
-    tileData() {
-      return [...this.$store.state.appData.tileData].sort(
-        ({ postion: a, postions: b }) => a - b
-      )
-    },
-    dashboardData() {
-      return this.$store.state.appData.dashboardData
-    },
-    showTrending() {
-      return this.$auth.user.settings?.is_trading
-    },
-    showRecentUploads() {
-      return this.$auth.user.settings?.is_recent_upload
-    },
-    user() {
-      return this.$auth.user
-    },
-  },
-  watch: {
-    '$store.state.appData.leftMenuOpen': {
-      handler() {
-        this.onHeroChanged()
-      },
-    },
-    '$store.state.appData.scrollTo'(n) {
-      switch (n) {
-        case 'recent':
-          this.scrollToRecent()
-          break
-        case 'trending':
-          this.scrollToTrending()
-          break
-      }
-    },
-  },
-  mounted() {
-    this.$store.dispatch('product/fetchOrderAlertList')
-    this.$store.dispatch('appData/fetchBannerData').then(() => {
-      this.$nextTick(() => {
-        setTimeout(() => {
-          this.bannerSliderTrigger()
-        }, 100)
-      })
-    })
-    this.$store.dispatch('appData/fetchTileData')
-    this.$store.dispatch('appData/fetchFolders')
-    this.$store.dispatch('appData/fetchDashboardData').then(() => {
-      if (this.$store.state.appData.scrollToRecent) {
-        if (this.$store.state.appData.scrollTo === 'recent') {
-          this.scrollToRecent()
-        } else if (this.$store.state.appData.scrollTo === 'trending') {
-          this.scrollToTrending()
-        }
-      }
-      this.$nextTick(() => {
-        setTimeout(() => {
-          this.otherSliderTrigger()
-        }, 100)
-      })
-    })
-  },
-  head() {
-    // Extract the dynamic workspace and brand name logic
-    const workspace = this.$auth?.user?.accessibleInstances?.find(
-      ({ workspace_id }) =>
-        parseInt(workspace_id) === parseInt(this.$getWorkspaceId())
-    )
-    const brandName = workspace?.brand_name || 'Collage Inc'
-    const userLogo =
-      workspace?.logo || this.$config.baseUrl + '/collage-meta-icon.png'
+<script setup lang="ts">
+import { onMounted, computed, ref } from 'vue'
+import { useAppDataStore } from '@/stores/appData'
+import { useAuthStore } from '@/stores/auth'
+import { useHelpers } from '@/composables/core/common/useHelpers'
+import { useHead, useSeoMeta } from '#imports'
+import Tile from '@/components/dashboard/Tile.vue'
+import Resource from '@/components/dashboard/Resource.vue'
 
-    return {
-      title: `${brandName} Brand Portal by Collage Inc`,
-      htmlAttrs: {
-        lang: 'en',
-      },
-      meta: [
-        { charset: 'utf-8' },
-        {
-          hid: 'og:image',
-          property: 'og:image',
-          content: userLogo,
-        },
-        {
-          hid: 'og:image:alt',
-          property: 'og:image:alt',
-          content: `${brandName} Logo`,
-        },
-        {
-          property: 'og:image:width',
-          content: '1200',
-        },
-        {
-          property: 'og:image:height',
-          content: '630',
-        },
-        {
-          property: 'og:image:type',
-          content: 'image/png',
-        },
-        {
-          name: 'twitter:card',
-          content: 'summary_large_image',
-        },
-        {
-          hid: 'og:title',
-          property: 'og:title',
-          content: `${brandName} Brand Portal by Collage Inc`,
-        },
-        {
-          property: 'og:locale',
-          content: 'en_US',
-        },
-        {
-          property: 'og:type',
-          content: 'website',
-        },
-        {
-          property: 'og:url',
-          content: this.$config.baseUrl,
-        },
-        {
-          property: 'og:site_name',
-          content: 'Collage',
-        },
-      ],
-      link: [
-        {
-          rel: 'icon',
-          type: 'image/x-icon',
-          href: this.$auth.user?.branding?.brand_favicon || '/favicon.png',
-          hid: 'favicon',
-        },
-      ],
-    }
-  },
-  methods: {
-    toggleCart(file) {
-      this.selectedFile = file
-      this.$nextTick(() => {
-        this.$refs.cartDialog.toggleModel()
-      })
-    },
-    bannerSliderTrigger() {
-      const $owl = window.$('.mainBannerSlider')
-      const owl = $owl.owlCarousel({
-        loop: true,
-        nav: false,
-        dots: true,
-        autoplay: true,
-        mouseDrag: false,
-        responsiveClass: true,
-        autoplayTimeout: 3000,
-        speed: 800,
-        responsiveBaseElement: '.body-content',
-        responsive: {
-          0: {
-            items: 1,
-          },
-        },
-      })
-      window.$(document).on('click', '.menu-show', function () {
-        window
-          .$('.body-content')
-          .one(
-            'webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend',
-            function (event) {
-              // alert('h')
-              owl.trigger('refresh.owl.carousel')
-            }
-          )
-      })
-    },
-    otherSliderTrigger() {
-      const $owl = window.$('.fourSlide')
-      const owl = $owl.owlCarousel({
-        nav: true,
-        dots: false,
-        responsiveClass: true,
-        margin: 0,
-        responsiveBaseElement: '.body-content',
-        navText: [
-          '<span><svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="25.811" height="50.121" viewBox="0 0 25.811 50.121"><path id="Icon_feather-chevron-down" data-name="Icon feather-chevron-down" d="M0,0,24,24,48,0" transform="translate(24.75 1.061) rotate(90)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg></span>',
-          '<span><svg class="arrow-icon" xmlns="http://www.w3.org/2000/svg" width="25.811" height="50.121" viewBox="0 0 25.811 50.121"><path id="Icon_feather-chevron-down" data-name="Icon feather-chevron-down" d="M0,0,24,24,48,0" transform="translate(24.75 1.061) rotate(90)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg></span>',
-        ],
-        responsive: {
-          0: {
-            items: 4,
-          },
-        },
-      })
-      window.$(document).on('click', '.menu-show', function () {
-        window
-          .$('.body-content')
-          .one(
-            'webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend',
-            function (event) {
-              // alert('h')
-              owl.trigger('refresh.owl.carousel')
-            }
-          )
-      })
-    },
-    onHeroChanged() {
-      // this.$nextTick(() => {
-      //   const hero = this.$refs.hero
-      //   if (!hero) return
-      //   const page = hero.currentPage
-      //   if (page === this.bannerData.length - 1) {
-      //     this.heroNavigateTo = [page, false]
-      //     setTimeout(() => {
-      //       this.heroNavigateTo = [0, false]
-      //     }, 1500)
-      //   }
-      // })
-    },
-    scrollToTrending() {
-      this.$refs.trending.scrollIntoView()
-      this.resetScrolling()
-    },
-    scrollToRecent() {
-      this.$refs.recent.scrollIntoView()
-      this.resetScrolling()
-    },
-    resetScrolling() {
-      const scrollingState = false
-      const scrollTo = ''
-      this.$store.dispatch('appData/changeScrolling', {
-        scrollingState,
-        scrollTo,
-      })
-    },
-    onShareFile(file) {
-      this.$nextTick(() => this.$refs.shareDialog.toggleModel())
-      this.shareFile = file
-    },
-    keytoTitle(key) {
-      return key[0].toUpperCase() + key.slice(1)
-    },
-    normalizedForNavitor(key) {
-      if (key === 'documents') return 'application'
+definePageMeta({
+  layout: 'collage-layout',
+  middleware: ['check-url', 'check-auth-client'],
+})
 
-      return key.slice(0, key.length - 1)
-    },
-  },
+const appDataStore = useAppDataStore()
+const authStore = useAuthStore()
+const { getWorkspaceId, getBrandName } = useHelpers()
+
+// Reactive data
+const shareFile = ref<null | any>(null)
+const heroNavigateTo = ref(0)
+const selectedFile = ref<null | any>(null)
+const shareDialog = ref(false)
+
+const trendingRef = ref<HTMLElement>()
+const recentRef = ref<HTMLElement>()
+
+// Computed properties
+const bannerData = computed(() => {
+  return [...appDataStore.bannerData].sort(
+    ({ position: a }: { position: number }, { position: b }: { position: number }) => a - b
+  )
+})
+const tileData = computed(() => {
+  return [...appDataStore.tileData].sort(
+    ({ position: a }: { position: number }, { position: b }: { position: number }) => a - b
+  )
+})
+const dashboardData = computed(() => appDataStore.dashboardData)
+const showTrending = computed(() => authStore.user?.settings?.is_trading)
+const showRecentUploads = computed(() => authStore.user?.settings?.is_recent_upload)
+const user = computed(() => authStore.user)
+
+// Functions
+function onShareFile(file: any) {
+  shareFile.value = file
+  shareDialog.value = true
 }
+
+function keytoTitle(key: string) {
+  return key[0].toUpperCase() + key.slice(1)
+}
+
+function normalizedForNavitor(key: string) {
+  if (key === 'documents') return 'application'
+  return key.slice(0, key.length - 1)
+}
+
+function closeShareDialog() {
+  shareDialog.value = false
+  shareFile.value = null
+}
+
+// Head (meta)
+const workspace = computed(() =>
+  authStore.user?.accessibleInstances?.find(
+    ({ workspace_id }: { workspace_id: any }) =>
+      parseInt(workspace_id) === parseInt(getWorkspaceId())
+  )
+)
+const brandName = computed(() => workspace.value?.brand_name || 'Collage Inc')
+const userLogo = computed(() =>
+  workspace.value?.logo || '/'
+)
+
+useHead({
+  title: computed(() => `${brandName.value} Brand Portal by Collage Inc`),
+  htmlAttrs: { lang: 'en' },
+  meta: [
+    { charset: 'utf-8' },
+  ],
+  link: [
+    {
+      rel: 'icon',
+      type: 'image/x-icon',
+      href: computed(() => authStore.user?.branding?.brand_favicon || '/favicon.png'),
+    },
+  ],
+})
+
+useSeoMeta({
+  ogImage: userLogo,
+  ogImageAlt: computed(() => `${brandName.value} Logo`),
+  ogImageWidth: '1200',
+  ogImageHeight: '630',
+  ogImageType: 'image/png',
+  twitterCard: 'summary_large_image',
+  ogTitle: computed(() => `${brandName.value} Brand Portal by Collage Inc`),
+  ogLocale: 'en_US',
+  ogType: 'website',
+  ogUrl: '/',
+  ogSiteName: 'Collage',
+})
+
+// Lifecycle
+onMounted(() => {
+  appDataStore.fetchBannerData()
+  appDataStore.fetchTileData()
+  appDataStore.fetchFolders(false)
+  appDataStore.fetchDashboardData()
+})
 </script>

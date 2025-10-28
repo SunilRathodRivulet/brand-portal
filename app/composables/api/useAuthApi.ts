@@ -1,4 +1,5 @@
 import { useNuxtApp } from '#imports'
+import type { User } from '~/stores/auth'
 
 export interface LoginResponse {
   data?: {
@@ -12,14 +13,6 @@ export interface LoginResponse {
   access_token?: string
   user_id?: number
   email?: string
-}
-
-export interface User {
-  id: number
-  email: string
-  name?: string
-  accessibleInstances?: any[]
-  [key: string]: any
 }
 
 export const useAuthApi = () => {
