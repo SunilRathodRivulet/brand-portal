@@ -300,7 +300,7 @@ definePageMeta({
    SEO Head
 ====================== */
 useHead({
-  title: () => form.value.brand_name || 'Digital Asset Manager',
+  title: () => form.value.brand_name || 'Collage.Inc',
   link: [{ rel: 'icon', href: form.value.brand_favicon || '/favicon.ico' }],
 })
 </script>
