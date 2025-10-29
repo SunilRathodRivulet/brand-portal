@@ -17,6 +17,7 @@ export interface LoginResponse {
 
 export const useAuthApi = () => {
   const { $api } = useNuxtApp()
+  const { brandName } = useHelpers()
 
   const login = async (email: string, password: string, workspaceUrlSlug?: string) => {
     try {
@@ -66,7 +67,7 @@ export const useAuthApi = () => {
     try {
       const response = await $api<{ data: { user: User, access_token: string } }>(
         'login-with-id',
-        { method: 'POST', body: { token: oneTimeToken } }
+        { method: 'POST', body: { token: oneTimeToken, url: brandName() } }
       )
       return response.data
     } catch (error: any) {

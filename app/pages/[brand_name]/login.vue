@@ -214,7 +214,6 @@ onMounted(async () => {
       await appDataStore.fetchBrandDetails(route.params.brand_name as string);
       // Give time for store reactivity to propagate
       await nextTick();
-      console.log("App Data Store Brand on Mounted:", appDataStore.brand);
       primaryColor.value =
         appDataStore.brand?.branding?.primary_color || "#ffffff";
       secondaryColor.value =

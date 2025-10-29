@@ -4,7 +4,7 @@ import { useAuthApi } from '~/composables/api/useAuthApi'
 
 export interface User {
   id: number
-  email: string
+  email?: string
   name?: string
   accessibleInstances?: any[]
   [key: string]: any
@@ -17,6 +17,7 @@ export const useAuthStore = defineStore('auth', () => {
   const loading = ref(false)
   const route = useRoute()
   const authApi = useAuthApi()
+  const { brandName } = useHelpers()
 
   /* ---------- Computed ---------- */
   const isAuthenticated = computed(() => !!token.value && !!user.value)
@@ -50,8 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (response.data.user && response.data.access_token) {
           userData = response.data.user
           accessToken = response.data.access_token
-        }
-        else if (response.data.dealer_user_id && response.data.access_token) {
+        } else if (response.data.dealer_user_id && response.data.access_token) {
           userData = {
             id: response.data.dealer_user_id,
             email: response.data.email || '',
@@ -69,7 +69,6 @@ export const useAuthStore = defineStore('auth', () => {
         }
         accessToken = response.access_token
       }
-
       setUser(userData)
       setToken(accessToken)
 
@@ -84,7 +83,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = async () => {
-    const brandName =  route.params?.brand_name || user.value?.accessibleInstances?.[0]?.url || 'login'
+    const brandName = route.params?.brand_name || user.value?.accessibleInstances?.[0]?.url || 'login'
     try {
       if (token.value) {
         await authApi.logout(token.value)
@@ -115,10 +114,17 @@ export const useAuthStore = defineStore('auth', () => {
   const loginWithToken = async (oneTimeToken: string) => {
     loading.value = true
     try {
-      const data = await authApi.loginWithToken(oneTimeToken)
-      console.log('Token login data:', data)
 
-      setUser(data.user)
+      const data = await authApi.loginWithToken(oneTimeToken)
+      setUser({
+        id: data.user_id,
+        workspace_id: data.workspace_id,
+        is_slider: data.is_slider,
+        dealer_user_id: data.dealer_user_id,
+        instance_id: data.instance_id,
+        name: brandName().replace("-", " ")
+          .replace(/^./, (c: string) => c.toUpperCase()),
+      })
       setToken(data.access_token)
 
       // await navigateTo('/')
