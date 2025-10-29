@@ -32,8 +32,8 @@
         <div class="text-center mb-6">
           <NuxtLink :to="`/${form.brand_url}/login`">
             <v-img
-              v-if="form.brand_logo"
-              :src="form.brand_logo"
+              v-if="logo"
+              :src="logo"
               height="48"
               contain
               class="mx-auto"
@@ -143,15 +143,7 @@ const confirmPasswordError = ref<string | null>(null)
    Brand Details
 ====================== */
 const { brandDetail } = useHelpers()
-const logo = computed(() => {
-  try {
-    const appDataStore = useAppDataStore()
-    return appDataStore.brand?.branding?.brand_logo || ''
-  } catch (err) {
-    console.error('Failed to load logo:', err)
-    return ''
-  }
-})
+const logo = ref('')
 
 /* ======================
    Custom Validation
@@ -249,8 +241,15 @@ if (data.value) {
 /* ======================
    Apply custom styles on mount
 ====================== */
-onMounted(() => {
+onMounted(async () => {
   if (process.client) {
+    const appDataStore = useAppDataStore();
+    if (!appDataStore.brand) {
+      await appDataStore.fetchBrandDetails(route.params.brand_name as string);
+      // Give time for store reactivity to propagate
+      await nextTick();
+    }
+    logo.value = appDataStore.logo || "/Collage-labinc-dark12c.svg";
     const brandInfo = brandDetail.value
     if (brandInfo?.branding) {
       const root = document.documentElement

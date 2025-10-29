@@ -181,8 +181,13 @@ onMounted(() => {
 ====================== */
 if (process.client) {
   try {
-    const appDataStore = useAppDataStore()
-   logo.value = appDataStore.logo || "/Collage-labinc-dark12c.svg";
+    const appDataStore = useAppDataStore();
+    if (!appDataStore.brand) {
+      await appDataStore.fetchBrandDetails(route.params.brand_name as string);
+      // Give time for store reactivity to propagate
+      await nextTick();
+    }
+    logo.value = appDataStore.logo || "/Collage-labinc-dark12c.svg";
   } catch (error) {
     console.error('Failed to load logo from store:', error)
   }
