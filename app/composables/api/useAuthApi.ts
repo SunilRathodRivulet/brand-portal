@@ -75,10 +75,54 @@ export const useAuthApi = () => {
     }
   }
 
+  const forgotPassword = async (email: string, workspaceId: string) => {
+    try {
+      await $api('forgot-password', {
+        method: 'POST',
+        body: { email, url: workspaceId },
+        skipAuth: true
+      })
+    } catch (error: any) {
+      console.error('[AuthAPI] forgotPassword - Error:', error)
+      throw error
+    }
+  }
+
+  const getResetPasswordDetails = async (token: string) => {
+    try {
+      const response = await $api('reset-password-details', {
+        method: 'POST',
+        body: { token },
+        skipAuth: true
+      })
+      return response
+    } catch (error: any) {
+      console.error('[AuthAPI] getResetPasswordDetails - Error:', error)
+      throw error
+    }
+  }
+
+  const resetPassword = async (resetToken: string, token: string, password: string, timezone: string) => {
+    try {
+      const response = await $api('reset-password', {
+        method: 'POST',
+        body: { reset_token: resetToken, token, password, timezone },
+        skipAuth: true
+      })
+      return response
+    } catch (error: any) {
+      console.error('[AuthAPI] resetPassword - Error:', error)
+      throw error
+    }
+  }
+
   return {
     login,
     logout,
     getUser,
-    loginWithToken
+    loginWithToken,
+    forgotPassword,
+    getResetPasswordDetails,
+    resetPassword
   }
 }

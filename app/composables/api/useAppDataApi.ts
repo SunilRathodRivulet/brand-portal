@@ -73,7 +73,7 @@ export const useAppDataApi = () => {
       // Assuming it's a POST or GET, adjust method as needed
       const response = await $api<{ data: BrandDetails }>(`verify-domain`, {
         method: 'POST',
-        body: { brand_name: brandName }
+        body: { url: brandName }
       })
       return response.data
     } catch (error: any) {
