@@ -1,6 +1,6 @@
 <!-- pages/[brand_name]/generate-password.vue -->
 <template>
-  <v-app v-if="error">
+  <v-app v-if="error" :style="{ backgroundColor: primaryColor }">
     <v-main class="d-flex align-center justify-center fill-height">
       <v-card rounded="xl" elevation="8" width="420" class="pa-6 pa-sm-8">
         <div class="text-center mb-6">
@@ -52,7 +52,7 @@
     </v-main>
   </v-app>
 
-  <v-app v-else>
+  <v-app v-else :style="{ backgroundColor: primaryColor }">
     <v-main class="d-flex align-center justify-center fill-height">
       <v-card rounded="xl" elevation="8" width="420" class="pa-6 pa-sm-8">
         <div class="text-center mb-6">
@@ -172,7 +172,9 @@
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
-import { onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { useNuxtApp } from '#app';
+import { useAppDataStore } from "~/stores/appData";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -217,6 +219,7 @@ interface ApiResponse {
 const route = useRoute();
 const { $api } = useNuxtApp();
 const snackbar = useSnackbar();
+const appDataStore = useAppDataStore();
 
 const brandName = computed(
   () =>
@@ -227,9 +230,13 @@ const app = useAppConfig() as AppConfig;
 const brand = computed(() => ({
   name: app.brand?.name || brandName.value || "Collage.Inc",
   logo: app.brand?.logo || "",
-  primary: app.brand?.primaryColor || "#1976d2",
+  primary: app.brand?.primaryColor || "#ffffff",
   secondary: app.brand?.secondaryColor || "#424242",
 }));
+
+const primaryColor = ref("#ffffff");
+
+const secondaryColor = ref("#424242");
 
 /* ======================
    Form & Error States
@@ -289,26 +296,8 @@ const disableSubmitBtn = computed(() => {
 });
 
 /* ======================
-   Color Styles Helper (kept from original)
+   Fetch Initial Data (useAsyncData instead of asyncData)
 ====================== */
-const customStyles = () => {
-  const { brandDetail } = useHelpers();
-  const brandInfo = brandDetail.value;
-  if (!brandInfo?.branding) return "";
-
-  return `:root {
-    --primary: ${hexToRgb(brandInfo.branding.primary_color)} !important;
-    --secondary: ${hexToRgb(brandInfo.branding.secondary_color)} !important;
-  }`;
-};
-
-const hexToRgb = (hex: string) => {
-  if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return null;
-  let c = hex.substring(1).split("");
-  if (c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]];
-  const num = parseInt("0x" + c.join(""), 16);
-  return [(num >> 16) & 255, (num >> 8) & 255, num & 255].join(",");
-};
 
 /* ======================
    Fetch Initial Data (useAsyncData instead of asyncData)
@@ -359,32 +348,6 @@ if (invitationData.value && invitationData.value.data) {
   };
 }
 
-/* ======================
-   Apply custom styles on mount
-====================== */
-onMounted(() => {
-  if (process.client) {
-    watchImpl();
-  }
-});
-
-const watchImpl = () => {
-  const { brandDetail } = useHelpers();
-  const brandInfo = brandDetail.value;
-
-  if (brandInfo?.branding) {
-    const root = document.documentElement;
-    root.style.setProperty(
-      "--primary",
-      hexToRgb(brandInfo.branding.primary_color)
-    );
-    root.style.setProperty(
-      "--secondary",
-      hexToRgb(brandInfo.branding.secondary_color)
-    );
-  }
-};
-
 // Set logo from store if available
 if (process.client && !error.value) {
   try {
@@ -393,6 +356,10 @@ if (process.client && !error.value) {
       await appDataStore.fetchBrandDetails(route.params.brand_name as string);
       // Give time for store reactivity to propagate
       await nextTick();
+      primaryColor.value =
+        appDataStore.brand?.branding?.primary_color || "#ffffff";
+      secondaryColor.value =
+        appDataStore.brand?.branding?.secondary_color || "#424242";
     }
     form.value.logo = appDataStore.logo || "/Collage-labinc-dark12c.svg";
   } catch {}

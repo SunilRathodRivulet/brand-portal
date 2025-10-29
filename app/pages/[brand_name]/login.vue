@@ -1,15 +1,9 @@
 <template>
-  <v-app>
+  <v-app :style="{ backgroundColor: primaryColor }">
     <v-main class="d-flex align-center justify-center fill-height">
       <v-card rounded="xl" elevation="8" width="420" class="pa-6 pa-sm-8">
         <div class="text-center mb-6">
-          <v-img
-            v-if="logo"
-            :src="logo"
-            height="48"
-            contain
-            class="mx-auto"
-          />
+          <v-img v-if="logo" :src="logo" height="48" contain class="mx-auto" />
           <h2 v-else class="text-h5 font-weight-bold">
             {{ brandName }}
           </h2>
@@ -32,7 +26,9 @@
                 data-lpignore="true"
                 @input="validateEmail"
               />
-              <div v-if="emailError" class="form-controls-error">{{ emailError }}</div>
+              <div v-if="emailError" class="form-controls-error">
+                {{ emailError }}
+              </div>
             </v-col>
 
             <v-col cols="12" class="form-group required mb-4">
@@ -45,7 +41,9 @@
                 data-lpignore="true"
                 @input="validatePassword"
               />
-              <div v-if="passwordError" class="form-controls-error">{{ passwordError }}</div>
+              <div v-if="passwordError" class="form-controls-error">
+                {{ passwordError }}
+              </div>
             </v-col>
 
             <v-col cols="12" class="form-group">
@@ -97,11 +95,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useAppDataStore } from "~/stores/appData";
 import { useHead } from "nuxt/app";
 import { useHelpers } from "~/composables/core/common/useHelpers";
 import { useSnackbar } from "~/composables/useSnackbar";
+import { useNuxtApp } from "#app";
 
 definePageMeta({
   middleware: ["check-url"],
@@ -121,38 +120,26 @@ const passwordError = ref<string | null>(null);
 const appDataStore = useAppDataStore();
 const snackbar = useSnackbar();
 
+const primaryColor = ref("#ffffff");
+
+const secondaryColor = ref("#424242");
+
 // Getters
 const brandName = computed(() => {
   return (route.params.brand_name as string) || "Brand Portal";
 });
 
 const disableSubmitBtn = computed(() => {
-  return !!emailError.value || !!passwordError.value || !form.value.email.trim() || !form.value.password.trim() || loading.value;
+  return (
+    !!emailError.value ||
+    !!passwordError.value ||
+    !form.value.email.trim() ||
+    !form.value.password.trim() ||
+    loading.value
+  );
 });
 
 const { brandDetail } = useHelpers();
-
-// Methods
-const customStyles = () => {
-  return `:root {
-    --primary: ${hexToRgb("#1976d2")} !important;
-    --secondary: ${hexToRgb("#424242")} !important;
-  }`;
-};
-
-const hexToRgb = (hex: string) => {
-  if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? parseInt(result[1], 16) +
-          "," +
-          parseInt(result[2], 16) +
-          "," +
-          parseInt(result[3], 16)
-      : null;
-  }
-  return "25, 118, 210"; // Default primary blue
-};
 
 const validateEmail = () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -211,7 +198,9 @@ const login = async () => {
       snackbar.showError(result.error || "Login failed");
     }
   } catch (error: any) {
-    snackbar.showError(error.data?.message || error.message || "An error occurred during login");
+    snackbar.showError(
+      error.data?.message || error.message || "An error occurred during login"
+    );
   } finally {
     loading.value = false;
   }
@@ -220,12 +209,21 @@ const login = async () => {
 // Lifecycle
 onMounted(async () => {
   // TODO: Load brand logo from appDataStore when implemented
-  if (!appDataStore.brand) {
-    await appDataStore.fetchBrandDetails(route.params.brand_name as string);
-    // Give time for store reactivity to propagate
-    await nextTick();
+  try {
+    if (!appDataStore.brand) {
+      await appDataStore.fetchBrandDetails(route.params.brand_name as string);
+      // Give time for store reactivity to propagate
+      await nextTick();
+      console.log("App Data Store Brand on Mounted:", appDataStore.brand);
+      primaryColor.value =
+        appDataStore.brand?.branding?.primary_color || "#ffffff";
+      secondaryColor.value =
+        appDataStore.brand?.branding?.secondary_color || "#424242";
+    }
+    logo.value = appDataStore.logo || "/Collage-labinc-dark12c.svg";
+  } catch (error) {
+    console.error("Failed to load logo from store:", error);
   }
-  logo.value = appDataStore.logo || "/Collage-labinc-dark12c.svg";
 });
 
 // SEO

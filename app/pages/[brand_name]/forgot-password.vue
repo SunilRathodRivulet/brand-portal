@@ -1,8 +1,7 @@
 <template>
-  <v-app>
+  <v-app :style="{ backgroundColor: primaryColor }">
     <v-main class="d-flex align-center justify-center fill-height">
       <v-card rounded="xl" elevation="8" width="420" class="pa-6 pa-sm-8">
-
         <div class="text-center mb-6">
           <NuxtLink :to="`/${brandName}/login`">
             <v-img
@@ -20,7 +19,9 @@
 
         <div class="text-center mb-6">
           <h3 class="text-h6 mb-1">Forgot Password?</h3>
-          <p class="text-body-2 text-medium-emphasis">Enter your email and we send you a password reset link.</p>
+          <p class="text-body-2 text-medium-emphasis">
+            Enter your email and we send you a password reset link.
+          </p>
         </div>
 
         <v-form class="mt-10" @submit.prevent="handleSubmit">
@@ -35,7 +36,9 @@
                 autofocus
                 @input="validateEmail"
               />
-              <div v-if="emailError" class="form-controls-error">{{ emailError }}</div>
+              <div v-if="emailError" class="form-controls-error">
+                {{ emailError }}
+              </div>
             </v-col>
 
             <v-col cols="12" class="form-group">
@@ -54,7 +57,12 @@
             <v-col cols="12" class="form-group">
               <div class="forgotLink mt-4">
                 <NuxtLink :to="`/${brandName}/login`" class="btn-link">
-                  <AsyncIcon name="tableFilterArrow" width="18" height="18" color="#6473FF" />
+                  <AsyncIcon
+                    name="tableFilterArrow"
+                    width="18"
+                    height="18"
+                    color="#6473FF"
+                  />
                   Back to Login
                 </NuxtLink>
               </div>
@@ -63,8 +71,18 @@
         </v-form>
 
         <div class="text-center mt-6 text-caption text-medium-emphasis">
-          <a href="https://www.marketinghub.com/terms-conditions/" target="_blank" class="text-decoration-none mx-1">Term of use.</a>
-          <a href="https://www.marketinghub.com/privacy-policy/" target="_blank" class="text-decoration-none mx-1">Privacy policy</a>
+          <a
+            href="https://www.marketinghub.com/terms-conditions/"
+            target="_blank"
+            class="text-decoration-none mx-1"
+            >Term of use.</a
+          >
+          <a
+            href="https://www.marketinghub.com/privacy-policy/"
+            target="_blank"
+            class="text-decoration-none mx-1"
+            >Privacy policy</a
+          >
         </div>
       </v-card>
     </v-main>
@@ -72,164 +90,147 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthApi } from '~/composables/api/useAuthApi'
-import { onMounted } from 'vue'
+import { useAuthApi } from "~/composables/api/useAuthApi";
+import { ref, computed, onMounted, watch } from "vue";
+import { useNuxtApp } from "#app";
+import { useAppDataStore } from "~/stores/appData";
 
 interface FormData {
-  email: string
+  email: string;
 }
 
 interface BrandConfig {
-  name?: string
-  primaryColor?: string
-  secondaryColor?: string
-  favicon?: string
+  name?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  favicon?: string;
 }
 
 interface AppConfig {
-  brand?: BrandConfig
+  brand?: BrandConfig;
 }
 
 /* ======================
    Route & Brand
 ====================== */
-const route = useRoute()
-const snackbar = useSnackbar()
-const authApi = useAuthApi()
+const route = useRoute();
+const snackbar = useSnackbar();
+const authApi = useAuthApi();
+const appDataStore = useAppDataStore();
 
-const brandName = computed(() => (route.params.brand_name as string) || (route.query.brand_name as string))
+const brandName = computed(
+  () =>
+    (route.params.brand_name as string) || (route.query.brand_name as string)
+);
 
-const app = useAppConfig() as AppConfig
+const app = useAppConfig() as AppConfig;
 const brand = computed(() => ({
-  name: app.brand?.name || brandName.value || 'Collage.Inc',
-  primary: app.brand?.primaryColor || '#1976d2',
-  secondary: app.brand?.secondaryColor || '#424242',
-}))
+  name: app.brand?.name || brandName.value || "Collage.Inc",
+  primary: app.brand?.primaryColor || "#1976d2",
+  secondary: app.brand?.secondaryColor || "#424242",
+}));
 
 /* ======================
    Form & Error States
 ====================== */
 const form = ref<FormData>({
-  email: '',
-})
+  email: "",
+});
 
-const loading = ref(false)
-const emailError = ref<string | null>(null)
-const logo = ref('')
+const loading = ref(false);
+const emailError = ref<string | null>(null);
+const logo = ref("");
+
+const primaryColor = ref("#ffffff");
+
+const secondaryColor = ref("#424242");
 
 /* ======================
    Custom Validation
 ====================== */
 const validateEmail = () => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!form.value.email.trim()) {
-    emailError.value = 'Email address is required'
-    return
+    emailError.value = "Email address is required";
+    return;
   }
   if (!emailRegex.test(form.value.email)) {
-    emailError.value = 'Please enter valid email address.'
-    return
+    emailError.value = "Please enter valid email address.";
+    return;
   }
-  emailError.value = null
-}
+  emailError.value = null;
+};
 
 const disableSubmitBtn = computed(() => {
-  const hasError = !!emailError.value
-  const emptyEmail = !form.value.email.trim()
-  return hasError || emptyEmail || loading.value
-})
-
-/* ======================
-   Color Styles Helper
-====================== */
-const customStyles = () => {
-  const { brandDetail } = useHelpers()
-  const brandInfo = brandDetail.value
-  if (!brandInfo?.branding) return ''
-
-  return `:root {
-    --primary: ${hexToRgb(brandInfo.branding.primary_color)} !important;
-    --secondary: ${hexToRgb(brandInfo.branding.secondary_color)} !important;
-  }`
-}
-
-const hexToRgb = (hex: string) => {
-  if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return null
-  let c = hex.substring(1).split('')
-  if (c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]]
-  const num = parseInt('0x' + c.join(''), 16)
-  return [(num >> 16) & 255, (num >> 8) & 255, num & 255].join(',')
-}
+  const hasError = !!emailError.value;
+  const emptyEmail = !form.value.email.trim();
+  return hasError || emptyEmail || loading.value;
+});
 
 /* ======================
    Apply custom styles on mount
 ====================== */
-onMounted(() => {
-  if (process.client) {
-    const { brandDetail } = useHelpers()
-    const brandInfo = brandDetail.value
-    if (brandInfo?.branding) {
-      const root = document.documentElement
-      root.style.setProperty('--primary', hexToRgb(brandInfo.branding.primary_color))
-      root.style.setProperty('--secondary', hexToRgb(brandInfo.branding.secondary_color))
-    }
-  }
-})
-
-/* ======================
+onMounted(async () => {
+  /* ======================
    Initialize logo from store
 ====================== */
-if (process.client) {
-  try {
-    const appDataStore = useAppDataStore();
-    if (!appDataStore.brand) {
-      await appDataStore.fetchBrandDetails(route.params.brand_name as string);
-      // Give time for store reactivity to propagate
-      await nextTick();
+  if (process.client) {
+    try {
+      const appDataStore = useAppDataStore();
+      if (!appDataStore.brand) {
+        await appDataStore.fetchBrandDetails(route.params.brand_name as string);
+        // Give time for store reactivity to propagate
+        await nextTick();
+        primaryColor.value =
+          appDataStore.brand?.branding?.primary_color || "#ffffff";
+        secondaryColor.value =
+          appDataStore.brand?.branding?.secondary_color || "#424242";
+      }
+      logo.value = appDataStore.logo || "/Collage-labinc-dark12c.svg";
+    } catch (error) {
+      console.error("Failed to load logo from store:", error);
     }
-    logo.value = appDataStore.logo || "/Collage-labinc-dark12c.svg";
-  } catch (error) {
-    console.error('Failed to load logo from store:', error)
   }
-}
-
+});
 /* ======================
    Submit Handler
 ====================== */
 const handleSubmit = async () => {
-  validateEmail()
-  if (disableSubmitBtn.value) return
+  validateEmail();
+  if (disableSubmitBtn.value) return;
 
-  loading.value = true
+  loading.value = true;
 
   try {
-    await authApi.forgotPassword(form.value.email, brandName.value)
+    await authApi.forgotPassword(form.value.email, brandName.value);
 
-    snackbar.showSuccess('You will receive a link to reset your password to your email!')
+    snackbar.showSuccess(
+      "You will receive a link to reset your password to your email!"
+    );
 
-    await navigateTo(`/${brandName.value}/login`)
+    await navigateTo(`/${brandName.value}/login`);
   } catch (err: any) {
-    const message = err.data?.message || err.message || 'Something went wrong'
-    snackbar.showError(message)
+    const message = err.data?.message || err.message || "Something went wrong";
+    snackbar.showError(message);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 /* ======================
    Page Meta
 ====================== */
 definePageMeta({
-  middleware: ['check-url'],
-})
+  middleware: ["check-url"],
+});
 
 /* ======================
    SEO Head
 ====================== */
 useHead({
   title: () => `${brand.value.name} – Forgot Password`,
-  link: [{ rel: 'icon', href: app.brand?.favicon || '/favicon.ico' }],
-})
+  link: [{ rel: "icon", href: app.brand?.favicon || "/favicon.ico" }],
+});
 </script>
 
 <style scoped>

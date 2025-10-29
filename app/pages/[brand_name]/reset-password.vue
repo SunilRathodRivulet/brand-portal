@@ -1,14 +1,24 @@
 <template>
-  <v-app>
+  <v-app :style="{ backgroundColor: primaryColor }">
     <v-main class="d-flex align-center justify-center fill-height">
       <v-container class="pa-0" v-if="loadingForm">
-        <v-card rounded="xl" elevation="8" width="420" class="pa-6 pa-sm-8 text-center">
+        <v-card
+          rounded="xl"
+          elevation="8"
+          width="420"
+          class="pa-6 pa-sm-8 text-center"
+        >
           <v-progress-circular indeterminate size="40" />
           <p class="mt-4">Loading...</p>
         </v-card>
       </v-container>
-      <v-card v-if="error" rounded="xl" elevation="8" width="420" class="pa-6 pa-sm-8 text-center">
-
+      <v-card
+        v-if="error"
+        rounded="xl"
+        elevation="8"
+        width="420"
+        class="pa-6 pa-sm-8 text-center"
+      >
         <v-img
           v-if="logo"
           :src="logo"
@@ -25,10 +35,18 @@
         />
         <div class="error-text">
           <h3 class="text-h6 mb-2">{{ message }}</h3>
-          <p class="text-body-2 text-medium-emphasis">This URL is not valid to reset Password.</p>
+          <p class="text-body-2 text-medium-emphasis">
+            This URL is not valid to reset Password.
+          </p>
         </div>
       </v-card>
-      <v-card v-else rounded="xl" elevation="8" width="420" class="pa-6 pa-sm-8">
+      <v-card
+        v-else
+        rounded="xl"
+        elevation="8"
+        width="420"
+        class="pa-6 pa-sm-8"
+      >
         <div class="text-center mb-6">
           <NuxtLink :to="`/${form.brand_url}/login`">
             <v-img
@@ -38,12 +56,16 @@
               contain
               class="mx-auto"
             />
-            <h2 v-else class="text-h5 font-weight-bold">{{ form.company_name }}</h2>
+            <h2 v-else class="text-h5 font-weight-bold">
+              {{ form.company_name }}
+            </h2>
           </NuxtLink>
         </div>
         <div class="text-center mb-6">
           <h3 class="text-h6 mb-1">Reset Password</h3>
-          <p class="text-body-2 text-medium-emphasis">You’re resetting password for {{ form.email }}</p>
+          <p class="text-body-2 text-medium-emphasis">
+            You’re resetting password for {{ form.email }}
+          </p>
         </div>
         <v-form class="mt-10" @submit.prevent="handleSubmit">
           <v-row no-gutters>
@@ -58,7 +80,9 @@
                 autofocus
                 @input="validatePassword"
               />
-              <div v-if="passwordError" class="form-controls-error">{{ passwordError }}</div>
+              <div v-if="passwordError" class="form-controls-error">
+                {{ passwordError }}
+              </div>
             </v-col>
             <v-col cols="12" class="form-group required mb-4">
               <label class="form-label">Confirm Password</label>
@@ -70,7 +94,9 @@
                 placeholder="Confirm Password"
                 @input="validateConfirmPassword"
               />
-              <div v-if="confirmPasswordError" class="form-controls-error">{{ confirmPasswordError }}</div>
+              <div v-if="confirmPasswordError" class="form-controls-error">
+                {{ confirmPasswordError }}
+              </div>
             </v-col>
             <v-col cols="12" class="form-group">
               <v-btn
@@ -87,8 +113,18 @@
           </v-row>
         </v-form>
         <div class="text-center mt-6 text-caption text-medium-emphasis">
-          <a href="https://www.marketinghub.com/terms-conditions/" target="_blank" class="text-decoration-none mx-1">Term of use.</a>
-          <a href="https://www.marketinghub.com/privacy-policy/" target="_blank" class="text-decoration-none mx-1">Privacy policy</a>
+          <a
+            href="https://www.marketinghub.com/terms-conditions/"
+            target="_blank"
+            class="text-decoration-none mx-1"
+            >Term of use.</a
+          >
+          <a
+            href="https://www.marketinghub.com/privacy-policy/"
+            target="_blank"
+            class="text-decoration-none mx-1"
+            >Privacy policy</a
+          >
         </div>
       </v-card>
     </v-main>
@@ -96,83 +132,90 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from 'dayjs'
-import timezone from 'dayjs/plugin/timezone'
-import utc from 'dayjs/plugin/utc'
-import { useAuthApi } from '~/composables/api/useAuthApi'
-import { onMounted } from 'vue'
+import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
+import { useAuthApi } from "~/composables/api/useAuthApi";
+import { ref, computed, onMounted, watch } from "vue";
+import { useNuxtApp } from "#app";
+import { useAppDataStore } from "~/stores/appData";
 
-dayjs.extend(utc)
-dayjs.extend(timezone)
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 interface FormData {
-  email: string
-  password: string
-  confirm_password: string
-  company_name?: string
-  brand_logo?: string
-  brand_url?: string
-  primary_color?: string
-  secondary_color?: string
-  brand_name?: string
-  email_token?: string
-  token?: string
-  brand_favicon?: string
+  email: string;
+  password: string;
+  confirm_password: string;
+  company_name?: string;
+  brand_logo?: string;
+  brand_url?: string;
+  primary_color?: string;
+  secondary_color?: string;
+  brand_name?: string;
+  email_token?: string;
+  token?: string;
+  brand_favicon?: string;
 }
 
 /* ======================
    Reactive Data
 ====================== */
-const route = useRoute()
-const snackbar = useSnackbar()
-const authApi = useAuthApi()
+const route = useRoute();
+const snackbar = useSnackbar();
+const authApi = useAuthApi();
+const appDataStore = useAppDataStore();
 
 const form = ref<FormData>({
-  email: '',
-  password: '',
-  confirm_password: '',
-})
-const loading = ref(false)
-const loadingForm = ref(true)
-const error = ref(false)
-const message = ref('')
-const passwordError = ref<string | null>(null)
-const confirmPasswordError = ref<string | null>(null)
+  email: "",
+  password: "",
+  confirm_password: "",
+});
+const loading = ref(false);
+const loadingForm = ref(true);
+const error = ref(false);
+const message = ref("");
+const passwordError = ref<string | null>(null);
+const confirmPasswordError = ref<string | null>(null);
 
 /* ======================
    Brand Details
 ====================== */
-const { brandDetail } = useHelpers()
-const logo = ref('')
+const { brandDetail } = useHelpers();
+const logo = ref("");
+
+const primaryColor = ref("#ffffff");
+
+const secondaryColor = ref("#424242");
 
 /* ======================
    Custom Validation
 ====================== */
 const validatePassword = () => {
   if (!form.value.password.trim()) {
-    passwordError.value = 'Password is required'
-    return false
+    passwordError.value = "Password is required";
+    return false;
   }
   if (form.value.password.length < 6) {
-    passwordError.value = 'Password must be at least 6 characters'
-    return false
+    passwordError.value = "Password must be at least 6 characters";
+    return false;
   }
-  passwordError.value = null
-  return true
-}
+  passwordError.value = null;
+  return true;
+};
 
 const validateConfirmPassword = () => {
   if (!form.value.confirm_password.trim()) {
-    confirmPasswordError.value = 'Confirm Password is required'
-    return false
+    confirmPasswordError.value = "Confirm Password is required";
+    return false;
   }
   if (form.value.confirm_password !== form.value.password) {
-    confirmPasswordError.value = 'Password and Confirm Password did not match.'
-    return false
+    confirmPasswordError.value = "Password and Confirm Password did not match.";
+    return false;
   }
-  confirmPasswordError.value = null
-  return true
-}
+  confirmPasswordError.value = null;
+  return true;
+};
 
 const disableSubmitBtn = computed(() => {
   return (
@@ -181,61 +224,48 @@ const disableSubmitBtn = computed(() => {
     !!confirmPasswordError.value ||
     !form.value.password.trim() ||
     !form.value.confirm_password.trim()
-  )
-})
-
-/* ======================
-   Color Styles Helper
-====================== */
-const customStyles = () => {
-  const brandInfo = brandDetail.value
-  if (!brandInfo?.branding) return ''
-
-  return `:root {
-    --primary: ${hexToRgb(brandInfo.branding.primary_color)} !important;
-    --secondary: ${hexToRgb(brandInfo.branding.secondary_color)} !important;
-  }`
-}
-
-const hexToRgb = (hex: string) => {
-  if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) return null
-  let c = hex.substring(1).split('')
-  if (c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]]
-  const num = parseInt('0x' + c.join(''), 16)
-  return [(num >> 16) & 255, (num >> 8) & 255, num & 255].join(',')
-}
+  );
+});
 
 /* ======================
    Fetch Page Data
 ====================== */
-const { data } = await useAsyncData('reset-password-details', async () => {
-  const query = route.query
-  const token = query.token as string
+const { data } = await useAsyncData("reset-password-details", async () => {
+  const query = route.query;
+  const token = query.token as string;
 
   if (!token) {
-    throw createError({ statusCode: 404, statusMessage: 'Token not provided' })
+    throw createError({ statusCode: 404, statusMessage: "Token not provided" });
   }
 
   try {
-    const response = await authApi.getResetPasswordDetails(token)
-    return response
+    const response = await authApi.getResetPasswordDetails(token);
+    return response;
   } catch (err: any) {
-    if (err.data?.message?.includes('expired')) {
-      error.value = true
-      message.value = err.data.message
-      return null
+    if (err.data?.message?.includes("expired")) {
+      error.value = true;
+      message.value = err.data.message;
+      return null;
     } else {
-      throw createError({ statusCode: err.status || 500, statusMessage: err.data?.message || err.message })
+      throw createError({
+        statusCode: err.status || 500,
+        statusMessage: err.data?.message || err.message,
+      });
     }
   }
-})
+});
 
 if (data.value) {
-  form.value = { ...form.value, ...data.value, password: '', confirm_password: '' }
-  error.value = false
-  loadingForm.value = false
+  form.value = {
+    ...form.value,
+    ...data.value,
+    password: "",
+    confirm_password: "",
+  };
+  error.value = false;
+  loadingForm.value = false;
 } else {
-  loadingForm.value = false
+  loadingForm.value = false;
 }
 
 /* ======================
@@ -248,27 +278,26 @@ onMounted(async () => {
       await appDataStore.fetchBrandDetails(route.params.brand_name as string);
       // Give time for store reactivity to propagate
       await nextTick();
+      primaryColor.value =
+        appDataStore.brand?.branding?.primary_color || "#ffffff";
+      secondaryColor.value =
+        appDataStore.brand?.branding?.secondary_color || "#424242";
+      console.log("App Data Store Brand on Mounted:", appDataStore.brand);
     }
     logo.value = appDataStore.logo || "/Collage-labinc-dark12c.svg";
-    const brandInfo = brandDetail.value
-    if (brandInfo?.branding) {
-      const root = document.documentElement
-      root.style.setProperty('--primary', hexToRgb(brandInfo.branding.primary_color))
-      root.style.setProperty('--secondary', hexToRgb(brandInfo.branding.secondary_color))
-    }
   }
-})
+});
 
 /* ======================
    Submit Handler
 ====================== */
 const handleSubmit = async () => {
-  const passwordValid = validatePassword()
-  const confirmValid = validateConfirmPassword()
-  if (!passwordValid || !confirmValid || disableSubmitBtn.value) return
+  const passwordValid = validatePassword();
+  const confirmValid = validateConfirmPassword();
+  if (!passwordValid || !confirmValid || disableSubmitBtn.value) return;
 
-  loading.value = true
-  const timezone = dayjs.tz.guess()
+  loading.value = true;
+  const timezone = dayjs.tz.guess();
 
   try {
     const response = await authApi.resetPassword(
@@ -276,33 +305,34 @@ const handleSubmit = async () => {
       form.value.token as string,
       form.value.password,
       timezone
-    )
+    );
 
-    snackbar.showSuccess(response.message)
+    snackbar.showSuccess(response.message);
 
-    await navigateTo(`/${response.data.user.url}/login`)
+    await navigateTo(`/${response.data.user.url}/login`);
   } catch (err: any) {
-    const errMessage = err.data?.message || err.message || 'Something went wrong'
-    snackbar.showError(errMessage)
+    const errMessage =
+      err.data?.message || err.message || "Something went wrong";
+    snackbar.showError(errMessage);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 /* ======================
    Page Meta
 ====================== */
 definePageMeta({
-  middleware: ['redirect-if-logged-in'],
-})
+  middleware: ["redirect-if-logged-in"],
+});
 
 /* ======================
    SEO Head
 ====================== */
 useHead({
-  title: () => form.value.brand_name || 'Collage.Inc',
-  link: [{ rel: 'icon', href: form.value.brand_favicon || '/favicon.ico' }],
-})
+  title: () => form.value.brand_name || "Collage.Inc",
+  link: [{ rel: "icon", href: form.value.brand_favicon || "/favicon.ico" }],
+});
 </script>
 
 <style scoped></style>
