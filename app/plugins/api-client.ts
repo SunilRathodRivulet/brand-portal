@@ -131,6 +131,7 @@ export default defineNuxtPlugin((nuxtApp) => {
         // Optionally trigger logout on client side
         if (process.client) {
           try {
+            console.log('401 Unauthorized response - triggering logout')
             const authStore = useAuthStore()
             authStore.logout()
           } catch (e) {

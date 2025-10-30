@@ -1,22 +1,6 @@
-// ~/middleware/check-auth.global.ts
+// ~/middleware/check-auth.ts
 export default defineNuxtRouteMiddleware(async (to) => {
   const authStore = useAuthStore()
-
-  /* ------------------------------------------------------------------ */
-  /* 1.  Server side: hydrate the store from the request cookie header  */
-  /* ------------------------------------------------------------------ */
-  if (process.server && !authStore.isAuthenticated) {
-    // The cookie helpers we created in the store read from document.cookie,
-    // but on the server we have to parse the header ourselves.
-    const cookieHeader = useRequestHeaders(['cookie'])['cookie'] || ''
-    const token = parseCookie(cookieHeader, 'auth_token')
-    const user  = safeJsonParse(parseCookie(cookieHeader, 'auth_user'))
-
-    if (token && user) {
-      authStore.setToken(token)   // writes nothing on server
-      authStore.setUser(user)     // writes nothing on server
-    }
-  }
 
   /* ------------------------------------------------------------------ */
   /* 2.  Now the store is correct on both server and client             */
@@ -29,15 +13,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (authStore.accessToken && !authStore.user) {
     console.log('[Auth Middleware] Token present but no user data, fetching user...')
     try {
-      await authStore.getUser()
+      await authStore.getUser(false) // Don't force redirect during middleware auth check
       if (authStore.isAuthenticated) {
         console.log('[Auth Middleware] User data fetched successfully')
         return
       }
     } catch (error) {
       console.error('[Auth Middleware] Failed to fetch user data:', error)
-      // Clear invalid token
-      authStore.clearAuth()
+      // Don't clear auth during middleware check - let user try again or handle elsewhere
     }
   }
 

@@ -15,7 +15,6 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const token = ref<string | null>(null)
   const loading = ref(false)
-  const route = useRoute()
   const authApi = useAuthApi()
   const { brandName } = useHelpers()
 
@@ -83,7 +82,6 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = async () => {
-    const brandName = route.params?.brand_name || user.value?.accessibleInstances?.[0]?.url || 'login'
     try {
       if (token.value) {
         await authApi.logout(token.value)
@@ -92,21 +90,24 @@ export const useAuthStore = defineStore('auth', () => {
       /* ignore */
     } finally {
       clearAuth()
-      await navigateTo(`/${brandName}/login`)
+      // Navigate to login without using route in this context
+      await navigateTo('/login')
     }
   }
 
-  const getUser = async () => {
+  const getUser = async (forceRedirectOnError: boolean = true) => {
     if (!token.value) return null
-    const brandName = route.params?.brand_name || user.value?.accessibleInstances?.[0]?.url || 'login'
     try {
       const userData = await authApi.getUser(token.value)
       setUser(userData)
       return userData
     } catch (e) {
       console.error('getUser failed', e)
-      clearAuth()
-      await navigateTo(`/${brandName}/login`)
+      // Only clear auth and redirect if explicitly requested (not during page refresh)
+      if (forceRedirectOnError) {
+        clearAuth()
+        await navigateTo('/login')
+      }
       return null
     }
   }

@@ -22,6 +22,7 @@ export const useAccountStatus = () => {
             const workspaceId = authStore.user?.workspace_id
             if (workspaceId) {
               const response = await accountApi.checkAccountStatus(workspaceId)
+              console.log('Account status check response:', response)
               if (response?.data?.is_suspended) {
                 // Get brand name BEFORE logout while user data is still available
                 const brandName = authStore.user?.accessibleInstances?.[0]?.url || 'login'

@@ -39,7 +39,7 @@
             <v-card-title>
               <strong v-if="unreadAnnouncements">
                 {{ unreadAnnouncements }} unread announcement{{
-                  unreadAnnouncements > 1 ? 's' : ''
+                  unreadAnnouncements > 1 ? "s" : ""
                 }}
               </strong>
               <span
@@ -96,20 +96,15 @@
                       </span>
                     </v-list-item-avatar>
 
-                    <v-list-item-content class="py-0">
-                      <v-list-item-title>
-                        {{ anno.announcements_detail.title }}
-                      </v-list-item-title>
-                      <v-list-item-subtitle>
-                        {{ anno.created_date }}
-                      </v-list-item-subtitle>
-                    </v-list-item-content>
+                    <v-list-item-title>
+                      {{ anno.announcements_detail.title }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle>
+                      {{ anno.created_date }}
+                    </v-list-item-subtitle>
 
                     <v-list-item-action class="my-0 ml-0">
-                      <v-tooltip
-                        bottom
-                        content-class="custom-tooltip-vuetify"
-                      >
+                      <v-tooltip bottom content-class="custom-tooltip-vuetify">
                         <template #activator="{ props: tooltipProps }">
                           <v-btn
                             v-bind="tooltipProps"
@@ -121,7 +116,7 @@
                           />
                         </template>
                         <span>
-                          {{ anno.read_at ? 'Mark as unread' : 'Mark as read' }}
+                          {{ anno.read_at ? "Mark as unread" : "Mark as read" }}
                         </span>
                       </v-tooltip>
                     </v-list-item-action>
@@ -214,16 +209,16 @@
 </template>
 
 <script setup lang="ts">
-import AsyncIcon from '~/components/AsyncIcon.vue'
-import { useDamNotification } from '~/composables/core/components/useDamNotification'
+import AsyncIcon from "~/components/AsyncIcon.vue";
+import { useDamNotification } from "~/composables/core/components/useDamNotification";
 
 /* ---------- props ---------- */
 interface Props {
-  navCollapsed?: boolean
+  navCollapsed?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
   navCollapsed: false,
-})
+});
 
 /* ---------- composable ---------- */
 const {
@@ -245,5 +240,5 @@ const {
   readUnreadAnnouncement,
   getFirstCharClass,
   workspaceModule,
-} = useDamNotification(props)
+} = useDamNotification(props);
 </script>

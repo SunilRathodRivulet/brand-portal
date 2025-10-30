@@ -15,15 +15,19 @@ export default defineNuxtPlugin(() => {
 
   // Load from cookies on mount
   if (userCookie.value) {
-    authStore.setUser(userCookie.value)
+    try {
+      authStore.setUser(JSON.parse(userCookie.value))
+    } catch (e) {
+      console.error('Error parsing user cookie', e)
+    }
   }
-  if (tokenCookie.value) {
+  if (tokenCookie.value && typeof tokenCookie.value === 'string') {
     authStore.setToken(tokenCookie.value)
   }
 
   // Watch store changes and sync to cookies
   watch(() => authStore.user, (newUser) => {
-    userCookie.value = newUser
+    userCookie.value = JSON.stringify(newUser)
   }, { deep: true })
 
   // Watch the internal token ref for changes

@@ -1,16 +1,11 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
+  // Ignore asset requests
+  if (to.path.startsWith('/_nuxt/') || to.path.includes('.')) {
+    return
+  }
+
   const authStore = useAuthStore()
   const route = to as any
-
-  if (process.server && !authStore.isAuthenticated) {
-    const hdr   = useRequestHeaders(['cookie'])['cookie'] || ''
-    const token = parseCookie(hdr, 'auth_token')
-    const user  = safeJsonParse(parseCookie(hdr, 'auth_user'))
-    if (token && user) {
-      authStore.setToken(token)   // updates ref, no document.cookie on server
-      authStore.setUser(user)
-    }
-  }
 
   // Handle authenticated user checking different brand
   if (authStore.isAuthenticated) {
@@ -79,7 +74,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     ]
 
     const hostName = typeof window !== 'undefined' ? window.location.host : useRequestHeaders()['host'] || ''
-    const isSubdomain = !mainAppUrls.includes(hostName) || route.query?.custom === 'true'
+    const isLocalhost = hostName.startsWith('localhost:');
+    const isSubdomain =
+      (!isLocalhost && !mainAppUrls.includes(hostName)) ||
+      route.query?.custom === 'true';
 
     if (isSubdomain) {
       // For subdomain access, verify domain

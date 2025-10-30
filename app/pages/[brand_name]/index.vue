@@ -1,53 +1,86 @@
 <template>
-  <div class="brand-index">
-    <div
+  <v-container class="brand-index" fluid>
+    <v-carousel
       v-if="bannerData.length"
-      class="hero-section hero-carousel owl-carousel mainBannerSlider"
+      v-model="heroNavigateTo"
+      class="hero-section mainBannerSlider"
+      height="auto"
+      show-arrows="hover"
+      hide-delimiters
     >
-      <div v-for="banner in bannerData" :key="banner.id" class="item">
-        <a :href="banner.url" target="_blank">
-          <img :src="banner.image" :alt="banner.title" />
-          <div v-if="banner.description" class="content">
-            <div class="content-wepper">
-              <h1>
-                {{ banner.description }}
-              </h1>
-            </div>
-          </div>
-        </a>
-      </div>
-    </div>
+      <v-carousel-item
+        v-for="banner in bannerData"
+        :key="banner.id"
+      >
+        <v-card
+          class="d-flex align-center justify-center"
+          height="100%"
+        >
+          <nuxt-link :href="banner.url" external>
+            <v-img
+              :src="banner.image"
+              :alt="banner.title"
+              height="400"
+              class="banner-image"
+            >
+              <div v-if="banner.description" class="content">
+                <div class="content-wrapper">
+                  <h1 class="text-center">{{ banner.description }}</h1>
+                </div>
+              </div>
+            </v-img>
+          </nuxt-link>
+        </v-card>
+      </v-carousel-item>
+    </v-carousel>
 
-    <div
-      v-if="!user?.is_slider && tileData && tileData.length"
-      class="trending-sec grid-tile resource-wrapper tiles-list"
-    >
-      <div class="common-box">
-        <div class="table-list-view">
-          <ul class="tbody">
-            <template v-for="tile in tileData" :key="tile.id">
-              <Tile :tile="tile" />
-            </template>
-          </ul>
-        </div>
-      </div>
-    </div>
+    <section v-if="!user?.is_slider && tileData && tileData.length" class="trending-sec resource-wrapper tiles-list">
+      <v-card class="common-box">
+        <v-row class="table-list-view">
+          <v-col
+            v-for="tile in tileData"
+            :key="tile.id"
+            cols="12"
+            sm="6"
+            md="4"
+            lg="3"
+          >
+            <Tile :tile="tile" />
+          </v-col>
+        </v-row>
+      </v-card>
+    </section>
 
-    <div
+    <section
       v-if="user?.is_slider && tileData && tileData.length"
-      class="trending-sec grid-tile resource-wrapper tiles-list"
+      class="trending-sec resource-wrapper tiles-list"
       :class="{ 'carousel-no-padding': tileData.length === 4 }"
     >
-      <div class="common-box">
-        <div class="table-list-view">
-          <ul class="tbody owl-carousel tiles-carousel fourSlide">
-            <template v-for="tile in tileData" :key="tile.id">
-              <Tile :tile="tile" />
-            </template>
-          </ul>
-        </div>
-      </div>
-    </div>
+      <v-card class="common-box">
+        <v-carousel
+          class="table-list-view tiles-carousel fourSlide"
+          height="auto"
+          show-arrows="hover"
+        >
+          <v-carousel-item
+            v-for="(tiles, index) in tileSlides"
+            :key="index"
+          >
+            <v-row>
+              <v-col
+                v-for="tile in tiles"
+                :key="tile.id"
+                cols="12"
+                sm="6"
+                md="3"
+              >
+                <Tile :tile="tile" />
+              </v-col>
+            </v-row>
+          </v-carousel-item>
+        </v-carousel>
+      </v-card>
+    </section>
 
     <template
       v-if="
@@ -57,28 +90,46 @@
         dashboardData.trending_data.length
       "
     >
-      <div ref="trending" class="section-title">
-        <h4>Trending</h4>
-      </div>
-      <div class="trending-sec grid-tile resource-wrapper">
-        <div class="common-box">
-          <div class="table-list-view">
-            <ul class="tbody fourSlide owl-carousel tiles-carousel">
-              <template v-for="file in dashboardData.trending_data" :key="file.id">
-                <Resource
-                  :file="file as any"
-                  emit-share
-                  hide-select
-                  @share="onShareFile"
-                />
-              </template>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <v-card ref="trending" class="section-title">
+        <v-card-title>
+          <h4>Trending</h4>
+        </v-card-title>
+      </v-card>
+      <section class="trending-sec resource-wrapper">
+        <v-card class="common-box">
+          <v-carousel
+            class="table-list-view tiles-carousel fourSlide"
+            height="auto"
+            show-arrows="hover"
+          >
+            <v-carousel-item
+              v-for="(files, index) in trendingSlides"
+              :key="index"
+            >
+              <v-row>
+                <v-col
+                  v-for="file in files"
+                  :key="file.id"
+                  cols="12"
+                  sm="6"
+                  md="3"
+                >
+                  <Resource
+                    :file="file as any"
+                    emit-share
+                    hide-select
+                    @share="onShareFile"
+                  />
+                </v-col>
+              </v-row>
+            </v-carousel-item>
+          </v-carousel>
+        </v-card>
+      </section>
     </template>
+
     <template v-if="dashboardData && showRecentUploads">
-      <div
+      <v-card
         v-if="
           dashboardData.recent_uploads.images.length ||
           dashboardData.recent_uploads.documents.length ||
@@ -88,101 +139,95 @@
         ref="recent"
         class="section-title"
       >
-        <h4>Recent Uploaded</h4>
-      </div>
+        <v-card-title>
+          <h4>Recent Uploaded</h4>
+        </v-card-title>
+      </v-card>
 
-      <template v-for="(files, key) in dashboardData.recent_uploads">
+      <template v-for="(files, key) in dashboardData.recent_uploads" :key="key">
         <template v-if="files.length">
-          <div :key="key" class="mini-title">
-            <!-- <input id="Images" type="checkbox" class="form-check-input" /> -->
-            <label>{{ keytoTitle(key) }}</label>
-            <nuxt-link
-              :to="{
-                name: 'brand_name-folders',
-                params: { brand_name: getBrandName() },
-                hash: `#${normalizedForNavitor(key)}`,
-              }"
-              class="browse-box"
-            >
-              <span>
-                Browse
-                {{ dashboardData[`total_${key}`] }} {{ keytoTitle(key) }}
-              </span>
-            </nuxt-link>
-          </div>
-          <div
+          <v-row :key="key" class="mini-title align-center mb-2">
+            <v-col>
+              <v-label>{{ keytoTitle(key) }}</v-label>
+            </v-col>
+            <v-col cols="auto">
+              <v-btn
+                :to="{
+                  name: 'brand_name-folders',
+                  params: { brand_name: getBrandName() },
+                  hash: `#${normalizedForNavitor(key)}`,
+                }"
+                variant="text"
+                class="browse-box"
+              >
+                Browse {{ dashboardData[`total_${key}`] }} {{ keytoTitle(key) }}
+              </v-btn>
+            </v-col>
+          </v-row>
+          <section
             :key="`files-${key}`"
-            class="recentuploads-sec grid-tile resource-wrapper"
+            class="recentuploads-sec resource-wrapper"
             :class="{
-              mb2: key == Object.keys(dashboardData.recent_uploads).pop(),
+              'mb-2': key === Object.keys(dashboardData.recent_uploads).pop(),
             }"
           >
-            <div class="common-box">
-              <div class="table-list-view">
-                <ul class="tbody fourSlide owl-carousel tiles-carousel">
-                  <template v-for="file in files" :key="file.id">
-                    <Resource
-
-                      :file="file as any"
-                      emit-share
-                      hide-select
-                      @share="onShareFile"
-                    />
-                  </template>
-                </ul>
-              </div>
-            </div>
-          </div>
+            <v-card class="common-box">
+              <v-carousel
+                class="table-list-view tiles-carousel fourSlide"
+                height="auto"
+                show-arrows="hover"
+              >
+                <v-carousel-item
+                  v-for="(fileSlides, index) in recentSlides[key]"
+                  :key="index"
+                >
+                  <v-row>
+                    <v-col
+                      v-for="file in fileSlides"
+                      :key="file.id"
+                      cols="12"
+                      sm="6"
+                      md="3"
+                    >
+                      <Resource
+                        :file="file as any"
+                        emit-share
+                        hide-select
+                        @share="onShareFile"
+                      />
+                    </v-col>
+                  </v-row>
+                </v-carousel-item>
+              </v-carousel>
+            </v-card>
+          </section>
         </template>
         <template v-else>
-          <div :key="key" class="mini-title">
-            <label for="Images" class="check-label">{{
-              keytoTitle(key)
-            }}</label>
-          </div>
-          <div
+          <v-row :key="key" class="mini-title align-center">
+            <v-col>
+              <v-label>{{ keytoTitle(key) }}</v-label>
+            </v-col>
+          </v-row>
+          <section
             :key="`files-${key}`"
-            class="recentuploads-sec grid-tile resource-wrapper"
+            class="recentuploads-sec resource-wrapper"
           >
-            <div class="common-box">
-              <div :key="key" class="no-data-found my-5">
-                <div class="inner w-100">
-                  <svg
-                    id="Layer_1"
-                    class="no-record-icon darkgray"
-                    style="height: 150px"
-                    version="1.1"
-                    xmlns="http://www.w3.org/2000/svg"
-                    xmlns:xlink="http://www.w3.org/1999/xlink"
-                    x="0px"
-                    y="0px"
-                    viewBox="0 0 131.3 156.8"
-                    xml:space="preserve"
-                  >
-                    <g id="Group_4457" transform="translate(-190.348 -177.624)">
-                      <path
-                        id="Path_3564"
-                        class="fill-color"
-                        d="M285.2,214.4c-1.5,0-2.6,1.2-2.6,2.6c0,1.5,1.2,2.6,2.6,2.6h4.4v4.4c0,1.5,1.2,2.6,2.6,2.6s2.6-1.2,2.6-2.6l0,0l0,0v-4.4h4.4c1.5,0,2.6-1.2,2.6-2.6s-1.2-2.6-2.6-2.6l0,0h-4.4V210c0-1.5-1.2-2.6-2.6-2.6s-2.6,1.2-2.6,2.6v4.4H285.2z"
-                      />
-                      <path
-                        id="Path_3565"
-                        class="fill-color"
-                        d="M321.6,199.8c0.3-1.5-9.1-9.6-15.5-16.4c-3.9-3.7-7.4-9-9.5-3.1v15.5c0,3.8,3.1,6.8,6.8,6.8h12.8v95.1c0,0.9-0.7,1.6-1.6,1.6H227c-0.9,0-1.6-0.7-1.6-1.6V184.5c0-0.9,0.7-1.6,1.6-1.6h59.4c1.5,0,2.6-1.2,2.6-2.6s-1.2-2.6-2.6-2.6l0,0H227c-3.8,0-6.8,3.1-6.8,6.8v8.1h-8.1c-3.8,0-6.8,3.1-6.8,6.8v8.1h-8.1c-3.8,0-6.8,3.1-6.8,6.8v113.2c0,3.8,3.1,6.8,6.8,6.8H285c3.8,0,6.8-3.1,6.8-6.8v-8.1h8.1c3.8,0,6.8-3.1,6.8-6.8v-8.1h8.1c3.8,0,6.8-3.1,6.8-6.8V200C321.7,199.9,321.7,199.9,321.6,199.8L321.6,199.8z M301.5,312.6c0,0.9-0.7,1.6-1.6,1.6h-65.2c-1.5,0-2.6,1.2-2.6,2.6s1.2,2.6,2.6,2.6h51.8v8.1c0,0.9-0.7,1.6-1.6,1.6h-87.8c-0.9,0-1.6-0.7-1.6-1.6V214.3c0-0.9,0.7-1.6,1.6-1.6h8.1v99.9c0,3.8,3.1,6.8,6.8,6.8h10.4c1.5,0,2.6-1.2,2.6-2.6s-1.2-2.6-2.6-2.6l0,0h-10.4c-0.9,0-1.6-0.7-1.6-1.6V199.4c0-0.9,0.7-1.6,1.6-1.6h8.1v99.9c0,3.8,3.1,6.8,6.8,6.8h74.4L301.5,312.6L301.5,312.6z M303.5,197.3c-0.9,0-1.6-0.7-1.6-1.6v-9.1l10.7,10.7L303.5,197.3z"
-                      />
-                    </g>
-                  </svg>
-
-                  <p>You don't have files</p>
-                </div>
+            <v-card class="common-box">
+              <div class="no-data-found my-5">
+                <v-row justify="center">
+                  <v-col cols="12" md="6">
+                    <v-card-text class="text-center">
+                      <v-icon size="150" color="grey-darken-1">mdi-folder-off</v-icon>
+                      <p class="mt-2">You don't have files</p>
+                    </v-card-text>
+                  </v-col>
+                </v-row>
               </div>
-            </div>
-          </div>
+            </v-card>
+          </section>
         </template>
       </template>
     </template>
-
-
 
     <client-only>
       <!-- <ShareFile
@@ -193,7 +238,7 @@
       /> -->
       <!-- DownloadIndicator component import pending -->
     </client-only>
-  </div>
+  </v-container>
 </template>
 
 <script setup lang="ts">
@@ -234,10 +279,41 @@ const tileData = computed(() => {
     ({ position: a }: { position: number }, { position: b }: { position: number }) => a - b
   )
 })
+const tileSlides = computed(() => {
+  const chunks: any[][] = []
+  for (let i = 0; i < tileData.value.length; i += 4) {
+    chunks.push(tileData.value.slice(i, i + 4))
+  }
+  return chunks
+})
 const dashboardData = computed(() => appDataStore.dashboardData)
 const showTrending = computed(() => authStore.user?.settings?.is_trading)
 const showRecentUploads = computed(() => authStore.user?.settings?.is_recent_upload)
 const user = computed(() => authStore.user)
+
+const trendingSlides = computed(() => {
+  const data = dashboardData.value?.trending_data || []
+  const chunks: any[][] = []
+  for (let i = 0; i < data.length; i += 4) {
+    chunks.push(data.slice(i, i + 4))
+  }
+  return chunks
+})
+
+const recentSlides = computed(() => {
+  const slides: Record<string, any[][]> = {}
+  if (dashboardData.value?.recent_uploads) {
+    for (const key in dashboardData.value.recent_uploads) {
+      const files = dashboardData.value.recent_uploads[key]
+      const chunks: any[][] = []
+      for (let i = 0; i < files.length; i += 4) {
+        chunks.push(files.slice(i, i + 4))
+      }
+      slides[key] = chunks
+    }
+  }
+  return slides
+})
 
 // Functions
 function onShareFile(file: any) {
@@ -301,10 +377,13 @@ useSeoMeta({
 })
 
 // Lifecycle
-onMounted(() => {
-  appDataStore.fetchBannerData()
-  appDataStore.fetchTileData()
-  appDataStore.fetchFolders(false)
-  appDataStore.fetchDashboardData()
+onMounted(async () => {
+  // Only fetch data if user is authenticated to avoid 401 errors that clear auth
+  if (authStore.isAuthenticated) {
+    await appDataStore.fetchBannerData()
+    await appDataStore.fetchTileData()
+    await appDataStore.fetchFolders(false)
+    await appDataStore.fetchDashboardData()
+  }
 })
 </script>

@@ -1,5 +1,5 @@
 <template>
-  <v-list-item>
+  <div class="tile-item">
     <div class="preview-img">
       <div class="categary-image">
         <v-btn
@@ -24,7 +24,7 @@
         </v-btn>
       </div>
     </div>
-  </v-list-item>
+  </div>
 </template>
 
 <script setup lang="ts">
