@@ -8,7 +8,7 @@
           variant="text"
           class="img-link pa-0"
         >
-          <v-img :src="tileImage" :alt="'Image of ' + tile.title" />
+          <v-img :src="tile.image" :alt="'Image of ' + tile.title" />
         </v-btn>
       </div>
     </div>
@@ -39,17 +39,46 @@ const props = defineProps<{
   tile: Tile;
 }>();
 
-const config = useRuntimeConfig();
-
-const tileImage = computed(() => {
-  if (props.tile.image && config.public.backendUrl) {
-    return `${config.public.backendUrl}${props.tile.image}`;
-  }
-  return '';
-});
-
 </script>
 
 <style scoped>
-/* Add your styles here */
+.tile-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.preview-img {
+  width: 100%;
+  padding-top: 100%; /* 1:1 Aspect Ratio */
+  position: relative;
+}
+
+.categary-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+}
+
+.img-link {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.v-img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.categary-name {
+  padding: 16px;
+  text-align: center;
+}
 </style>
