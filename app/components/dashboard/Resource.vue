@@ -155,6 +155,7 @@ const { dispatchAnalytics } = useAnalytics();
 const { isImage, isVideo } = useFileType(props.file);
 const downloadStore = useDownloadStore();
 const route = useRoute();
+const config = useRuntimeConfig();
 
 /* ------------------------------------------------------------------ */
 /* Reactive state                                                     */
@@ -168,11 +169,15 @@ const imageLoading = ref(false);
 /* ------------------------------------------------------------------ */
 
 
-const thumbnailSrc = computed(() =>
-  isVideo.value
+const thumbnailSrc = computed(() => {
+  const imagePath = isVideo.value
     ? props.file.video_preview || props.file.preview_image
-    : props.file.thumbnail_file || props.file.preview_image || placeholderIcon()
-);
+    : props.file.thumbnail_file || props.file.preview_image;
+  if (imagePath) {
+    return imagePath;
+  }
+  return placeholderIcon();
+});
 
 /* ------------------------------------------------------------------ */
 /* Methods                                                            */

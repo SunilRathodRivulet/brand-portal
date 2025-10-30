@@ -8,7 +8,7 @@
           variant="text"
           class="img-link pa-0"
         >
-          <v-img :src="tile.image" :alt="'Image of ' + tile.title" />
+          <v-img :src="tileImage" :alt="'Image of ' + tile.title" />
         </v-btn>
       </div>
     </div>
@@ -38,6 +38,15 @@ interface Tile {
 const props = defineProps<{
   tile: Tile;
 }>();
+
+const config = useRuntimeConfig();
+
+const tileImage = computed(() => {
+  if (props.tile.image && config.public.backendUrl) {
+    return `${config.public.backendUrl}${props.tile.image}`;
+  }
+  return '';
+});
 
 </script>
 

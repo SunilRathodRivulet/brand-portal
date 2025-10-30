@@ -11,26 +11,15 @@
       <v-carousel-item
         v-for="banner in bannerData"
         :key="banner.id"
+        :src="banner.image"
       >
-        <v-card
-          class="d-flex align-center justify-center"
-          height="100%"
-        >
-          <nuxt-link :href="banner.url" external>
-            <v-img
-              :src="banner.image"
-              :alt="banner.title"
-              height="400"
-              class="banner-image"
-            >
-              <div v-if="banner.description" class="content">
-                <div class="content-wrapper">
-                  <h1 class="text-center">{{ banner.description }}</h1>
-                </div>
-              </div>
-            </v-img>
-          </nuxt-link>
-        </v-card>
+        <nuxt-link :href="banner.url" external style="display: block; height: 100%; width: 100%;">
+          <div v-if="banner.description" class="content">
+            <div class="content-wrapper">
+              <h1 class="text-center">{{ banner.description }}</h1>
+            </div>
+          </div>
+        </nuxt-link>
       </v-carousel-item>
     </v-carousel>
 
